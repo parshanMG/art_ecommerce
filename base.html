@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Ecommerce</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Island+Moments&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .island-moments { font-family: 'Island Moments', cursive; }
+        * { outline: none; border: none; }
+        *:focus, *:active { outline: none !important; border: none !important; }
+        a, button { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body>
+
+<script src="navbar.js"></script>
+
+<!-- this is images area-->
+<main class="pt-20">
+  <div class="banner">
+                <picture>
+                    <source srcset="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=576&height=324&quality=85" media="(max-width: 575.98px)">
+                    <source srcset="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=768&height=432&quality=85" media="(max-width: 767.98px)">
+                    <source srcset="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=992&height=558&quality=85" media="(max-width: 991.98px)">
+                    <img class="image" id="bannerImage" src="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=1920&height=1080&quality=85" alt="" loading="eager">
+                </picture>
+                <div class="video" id="bannerVideo" data-vimeo-id="1163953602" data-vimeo-background="true" data-vimeo-responsive="true" data-vimeo-initialized="true"><div style="padding:56.25% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1163953602?loop=1&background=1&app_id=122963" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Home page animated banner - (Spring)" data-ready="true"></iframe></div></div>
+                <script src="https://player.vimeo.com/api/player.js"></script>
+  </div>
+
+<!-- this is products area-->
+
+<section class="bg-white pt-8 pb-16">
+    <div id="featured-products-carousel" class="container mx-auto px-4"></div>
+</section>
+
+<section class="bg-black pt-8 pb-5">
+    <div class="container mx-auto px-4">
+        
+        <!-- Title Block -->
+        <div class="text-center mb-1 text-white">
+            <h2 class="text-2xl font-bold">Welcome To My Website</h2>
+        </div>
+        
+        <!-- Cards Grid: 1 column mobile, 3 columns desktop -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Card 1 -->
+            <div class="transparent p-6 rounded-lg text-center">
+                <!-- Card content -->
+                <img src="images\Icons\global.png" alt="Globe Icon" class="mx-auto w-12 h-12 mb-4">
+                <h3 class="text-xl font-semibold text-white">Global Shipping</h3>
+            </div>
+            
+            <!-- Card 2 -->
+            <div class="transparent p-6 rounded-lg text-center">
+                <!-- Card content -->
+                <img src="images\Icons\security.png" alt="Security Icon" class="mx-auto w-12 h-12 mb-4">
+                <h3 class="text-xl font-semibold text-white">14 Day Return</h3>
+            </div>
+            
+            <!-- Card 3 -->
+            <div class="transparent p-6 rounded-lg text-center">
+                <!-- Card content -->
+                <img src="images\Icons\review.png" alt="Reviews Icon" class="mx-auto w-12 h-12 mb-4">
+                <h3 class="text-xl font-semibold text-white">4.4/5 Rating</h3>
+            </div>
+            
+        </div>
+        
+    </div>
+</section>
+  
+</main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script src="data/productsService.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        const formatCurrency = (amount) =>
+            new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+            }).format(amount);
+
+        function FeaturedProductsCarousel() {
+            const [products, setProducts] = React.useState([]);
+            const [pageIndex, setPageIndex] = React.useState(0);
+            const [isLoading, setIsLoading] = React.useState(true);
+            const [error, setError] = React.useState("");
+
+            React.useEffect(() => {
+                let isMounted = true;
+
+                async function loadProducts() {
+                    try {
+                        const allProducts = await window.productsService.fetchProducts();
+                        const featuredProducts = window.productsService.getFeaturedProducts(allProducts);
+
+                        if (isMounted) {
+                            setProducts(featuredProducts);
+                        }
+                    } catch (loadError) {
+                        if (isMounted) {
+                            setError(loadError.message || "Failed to load products.");
+                        }
+                    } finally {
+                        if (isMounted) {
+                            setIsLoading(false);
+                        }
+                    }
+                }
+
+                loadProducts();
+
+                return () => {
+                    isMounted = false;
+                };
+            }, []);
+
+            const pageSize = 3;
+            const pages = [];
+            for (let i = 0; i < products.length; i += pageSize) {
+                pages.push(products.slice(i, i + pageSize));
+            }
+
+            const goNext = () => {
+                if (!pages.length) return;
+                setPageIndex((prev) => (prev + 1) % pages.length);
+            };
+
+            const goPrev = () => {
+                if (!pages.length) return;
+                setPageIndex((prev) => (prev - 1 + pages.length) % pages.length);
+            };
+
+            if (isLoading) {
+                return (
+                    <div className="text-center py-10 text-gray-600">Loading featured products...</div>
+                );
+            }
+
+            if (error) {
+                return (
+                    <div className="text-center py-10 text-red-600">{error}</div>
+                );
+            }
+
+            if (!products.length) {
+                return (
+                    <div className="text-center py-10 text-gray-600">No featured products available right now.</div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold">Featured Products</h2>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3 md:gap-6">
+                        <button
+                            type="button"
+                            aria-label="Previous featured products"
+                            onClick={goPrev}
+                            className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-gray-200 transition rounded-full flex items-center justify-center"
+                        >
+                            <img src="images/Icons/arrow_back_ios_new_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png" alt="Previous" className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+
+                        <div className="overflow-hidden flex-1">
+                            <div
+                                className="flex transition-transform duration-500 ease-in-out"
+                                style={{ transform: `translateX(-${pageIndex * 100}%)` }}
+                            >
+                                {pages.map((page, idx) => (
+                                    <div key={idx} className="w-full shrink-0 flex flex-col md:flex-row gap-6 md:gap-8">
+                                        {page.map((product) => (
+                                            <article key={product.id} className="bg-gray-100 p-6 rounded-lg text-center flex-1">
+                                                <img src={product.image} alt={product.title} className="mx-auto w-full h-52 md:h-56 object-cover mb-4 rounded" />
+                                                <h3 className="text-xl font-semibold mb-2">{product.title}</h3>
+                                                <p className="text-gray-700 mb-4">{formatCurrency(product.price)}</p>
+                                                <button className="bg-black hover:bg-[#800020] text-white px-4 py-2 rounded">Buy Now</button>
+                                            </article>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            aria-label="Next featured products"
+                            onClick={goNext}
+                            className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-gray-200 transition rounded-full flex items-center justify-center"
+                        >
+                            <img src="images/Icons/arrow_forward_ios_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png" alt="Next" className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                    </div>
+
+                    <div className="mt-6 flex justify-center gap-2">
+                        {pages.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setPageIndex(idx)}
+                                aria-label={`Go to slide ${idx + 1}`}
+                                className={`w-2.5 h-2.5 rounded-full transition ${idx === pageIndex ? "bg-black" : "bg-gray-300"}`}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("featured-products-carousel"));
+        root.render(<FeaturedProductsCarousel />);
+    </script>
+</body>
+</html>
