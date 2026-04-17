@@ -9,8 +9,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art1.jpg",
-		"thumbnail": "images/products/art1.jpg",
+		"image": "/images/products/art1.jpg",
+		"thumbnail": "/images/products/art1.jpg",
 		"description": "A flowing composition of layered tones and movement."
 	},
 	{
@@ -23,8 +23,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art2.jpg",
-		"thumbnail": "images/products/art2.jpg",
+		"image": "/images/products/art2.jpg",
+		"thumbnail": "/images/products/art2.jpg",
 		"description": "Warm floral abstraction with bright gold accents."
 	},
 	{
@@ -37,8 +37,8 @@
 		"year": 2024,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art3.jpg",
-		"thumbnail": "images/products/art3.jpg",
+		"image": "/images/products/art3.jpg",
+		"thumbnail": "/images/products/art3.jpg",
 		"description": "A quiet still-life with muted greys and soft contrast."
 	},
 	{
@@ -51,8 +51,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art4.jpg",
-		"thumbnail": "images/products/art4.jpg",
+		"image": "/images/products/art4.jpg",
+		"thumbnail": "/images/products/art4.jpg",
 		"description": "Expressive strokes inspired by modern calligraphy forms."
 	},
 	{
@@ -65,8 +65,8 @@
 		"year": 2024,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art5.jpg",
-		"thumbnail": "images/products/art5.jpg",
+		"image": "/images/products/art5.jpg",
+		"thumbnail": "/images/products/art5.jpg",
 		"description": "A bold red-centric piece with energetic line work."
 	},
 	{
@@ -79,8 +79,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art6.jpg",
-		"thumbnail": "images/products/art6.jpg",
+		"image": "/images/products/art6.jpg",
+		"thumbnail": "/images/products/art6.jpg",
 		"description": "A layered portrait blending street textures and geometry."
 	},
 	{
@@ -93,8 +93,8 @@
 		"year": 2023,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art7.jpg",
-		"thumbnail": "images/products/art7.jpg",
+		"image": "/images/products/art7.jpg",
+		"thumbnail": "/images/products/art7.jpg",
 		"description": "A nocturnal interior scene with cool moonlit highlights."
 	},
 	{
@@ -107,8 +107,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art8.jpg",
-		"thumbnail": "images/products/art8.jpg",
+		"image": "/images/products/art8.jpg",
+		"thumbnail": "/images/products/art8.jpg",
 		"description": "A vivid fruit study with rich reds and dramatic lighting."
 	},
 	{
@@ -121,8 +121,8 @@
 		"year": 2025,
 		"available": true,
 		"featured": true,
-		"image": "images/products/art9.jpg",
-		"thumbnail": "images/products/art9.jpg",
+		"image": "/images/products/art9.jpg",
+		"thumbnail": "/images/products/art9.jpg",
 		"description": "Ornamental patterns and color harmonies inspired by heritage motifs."
 	}
 ]

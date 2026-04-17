@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Island+Moments&display=swap");
+
+@import "tailwindcss";
+
+* {
+  outline: none;
+  box-sizing: border-box;
+}
+
+*:focus,
+*:active {
+  outline: none !important;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+}
+
+.island-moments {
+  font-family: "Island Moments", cursive;
+}
