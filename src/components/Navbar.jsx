@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, Link } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 
 /* ── Flag SVGs (kept inline to match original design) ──────────────── */
@@ -45,57 +46,143 @@ const CnFlag = () => (
 /* ── Navbar Component ──────────────────────────────────────────────── */
 
 export default function Navbar() {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+
+  const subtotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1), 0),
+    [cartItems]
+  );
+
   useEffect(() => {
     initFlowbite();
   }, []);
 
+  useEffect(() => {
+    try {
+      const savedCartItems = localStorage.getItem("cartItems");
+      if (!savedCartItems) return;
+
+      const parsedItems = JSON.parse(savedCartItems);
+      if (Array.isArray(parsedItems)) {
+        setCartItems(parsedItems);
+      }
+    } catch {
+      setCartItems([]);
+    }
+  }, []);
+
+  const handleCartToggle = () => {
+    setIsCartOpen((prev) => !prev);
+  };
+
+  const handleCheckout = () => {
+    if (!cartItems.length) return;
+    window.alert("Checkout flow coming soon.");
+  };
+
   return (
-    <nav className="bg-black fixed w-full z-20 top-0 start-0">
-      <div className="relative w-full flex flex-wrap items-center justify-between px-4 py-4 md:px-8 xl:px-12">
+    <>
+      <nav className="bg-black fixed w-full z-40 top-0 start-0">
+      <div className="relative w-full flex flex-wrap items-center justify-between gap-y-4 px-4 py-4 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-6 md:px-8 xl:px-12">
         {/* Logo */}
-        <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+        <Link to="/" className="flex items-center space-x-3 rtl:space-x-reverse md:justify-self-start">
           <img src="/images/MM.png" className="h-12" alt="Logo" />
           <span className="self-center text-2xl text-white whitespace-nowrap island-moments font-medium">
             Maryam Mohseni
           </span>
-        </a>
+        </Link>
 
-        {/* Right side: language + hamburger */}
-        <div className="flex items-center md:order-2 space-x-1 md:space-x-0 rtl:space-x-reverse">
-          {/* Language button */}
+        {/* Nav links */}
+        <div
+          className="items-center justify-center hidden w-full md:flex md:w-auto md:justify-self-center"
+          id="navbar-language"
+        >
+          <ul className="font-medium flex flex-col items-center gap-2 p-4 border rounded-lg md:flex-row md:gap-8 md:p-0 md:mt-0 md:border-0">
+            <li>
+              <NavLink to="/" end className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:p-0 ${isActive ? "text-[#800020]" : "text-white md:hover:text-[#800020]"}`}>Home</NavLink>
+            </li>
+            <li>
+              <NavLink to="/shop" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 ${isActive ? "text-[#800020]" : "text-white md:hover:text-[#800020]"}`}>Shop</NavLink>
+            </li>
+            <li>
+              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">About</a>
+            </li>
+            <li>
+              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">Contact</a>
+            </li>
+          </ul>
+        </div>
+
+        {/* Right side: icons + hamburger */}
+        <div className="relative flex items-center justify-end gap-1 md:justify-self-end">
+          {/* Shop icon */}
           <button
             type="button"
-            data-dropdown-toggle="language-dropdown-menu"
-            className="flex items-center text-white active:text-[#800020] focus:text-[#800020] font-medium leading-5 rounded-lg text-sm px-3 py-2"
+            onClick={handleCartToggle}
+            className="inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg text-gray-300 hover:text-white focus:outline-none  "
+            aria-label="Open cart"
+            aria-expanded={isCartOpen}
+            aria-controls="shopping-cart-dropdown"
           >
-            <UsFlag />
-            English (US)
+            <img
+              src={isCartOpen ? "/images/Icons/shopping_cart_burgundy.png" : "/images/Icons/shopping_cart_icon.png"}
+              alt="Shopping cart"
+              className="w-6 h-6 object-contain"
+            />
           </button>
 
-          {/* Language dropdown */}
-          <div className="z-50 hidden border bg-white rounded-lg shadow-lg w-44" id="language-dropdown-menu">
-            <ul className="p-2 text-sm font-medium" role="none">
-              <li>
-                <a href="#" className="inline-flex items-center w-full p-2 hover:text-[#800020] rounded" role="menuitem">
-                  <div className="inline-flex items-center"><UsFlag /> English (US)</div>
-                </a>
-              </li>
-              <li>
-                <a href="#" className="inline-flex items-center w-full p-2 hover:text-[#800020] rounded" role="menuitem">
-                  <div className="inline-flex items-center"><DeFlag /> Deutsch</div>
-                </a>
-              </li>
-              <li>
-                <a href="#" className="inline-flex items-center w-full p-2 hover:text-[#800020] rounded" role="menuitem">
-                  <div className="inline-flex items-center"><ItFlag /> Italiano</div>
-                </a>
-              </li>
-              <li>
-                <a href="#" className="inline-flex items-center w-full p-2 hover:text-[#800020] rounded" role="menuitem">
-                  <div className="inline-flex items-center"><CnFlag /> 中文 (繁體)</div>
-                </a>
-              </li>
-            </ul>
+          <div
+            id="shopping-cart-dropdown"
+            className={`absolute right-0 top-full mt-3 w-[20rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl transition-all duration-200 ${
+              isCartOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
+            }`}
+            aria-hidden={!isCartOpen}
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <h2 className="text-lg font-semibold text-black">My Cart</h2>
+              <button
+                type="button"
+                onClick={handleCartToggle}
+                className="text-gray-500 hover:text-black"
+                aria-label="Close cart"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto py-4">
+              {!cartItems.length ? (
+                <p className="text-sm text-gray-600">Your cart is empty.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {cartItems.map((item) => (
+                    <li key={item.id} className="rounded-xl border border-gray-200 p-3">
+                      <p className="font-medium text-sm text-black">{item.title}</p>
+                      <div className="mt-1 flex items-center justify-between text-sm text-gray-600">
+                        <span>Qty: {item.quantity || 1}</span>
+                        <span>${Number(item.price || 0).toFixed(2)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Subtotal</span>
+                <span className="font-semibold text-black">${subtotal.toFixed(2)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCheckout}
+                disabled={!cartItems.length}
+                className="w-full rounded-xl bg-black py-3 text-white transition hover:bg-[#800020] disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                Checkout
+              </button>
+            </div>
           </div>
 
           {/* Hamburger */}
@@ -112,28 +199,17 @@ export default function Navbar() {
             </svg>
           </button>
         </div>
-
-        {/* Nav links */}
-        <div
-          className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1 md:justify-center md:absolute md:left-1/2 md:-translate-x-1/2"
-          id="navbar-language"
-        >
-          <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border rounded-lg md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0">
-            <li>
-              <a href="#" className="block py-2 px-3 text-white rounded md:bg-transparent md:p-0 md:hover:text-[#800020]" aria-current="page">Home</a>
-            </li>
-            <li>
-              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">Shop</a>
-            </li>
-            <li>
-              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">About</a>
-            </li>
-            <li>
-              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">Contact</a>
-            </li>
-          </ul>
-        </div>
       </div>
-    </nav>
+      </nav>
+
+      {isCartOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-transparent"
+          aria-label="Close cart dropdown"
+          onClick={handleCartToggle}
+        />
+      )}
+    </>
   );
 }

@@ -1,11 +1,11 @@
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
+import Shop from "./components/Shop";
 
-export default function App() {
+function HomePage() {
   return (
-    <>
-      <Navbar />
-      <main className="pt-20">
+    <main className="pt-20">
       <div className="banner">
         <picture>
           <source
@@ -80,6 +80,17 @@ export default function App() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function App() {
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<Shop />} />
+      </Routes>
     </>
   );
 }
