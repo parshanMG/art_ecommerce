@@ -101,15 +101,54 @@ export default function FeaturedProductsCarousel() {
             {pages.map((page, idx) => (
               <div key={idx} className="w-full shrink-0 flex flex-col md:flex-row gap-6 md:gap-8">
                 {page.map((product) => (
-                  <article key={product.id} className="bg-gray-100 p-6 rounded-lg text-center flex-1">
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="mx-auto w-full h-52 md:h-56 object-cover mb-4 rounded"
-                    />
-                    <h3 className="text-xl font-semibold mb-2">{product.title}</h3>
-                    <p className="text-gray-700 mb-4">{formatCurrency(product.price)}</p>
-                    <button className="bg-black hover:bg-[#800020] text-white px-4 py-2 rounded">Buy Now</button>
+                  <article key={product.id} className="group flex-1 [perspective:1000px]">
+                    <div className="relative h-80 md:h-96 w-full transition-transform duration-700 ease-in-out [transition-delay:0ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-hover:[transition-delay:500ms]">
+
+                      {/* Front — image with title/price overlay */}
+                      <div className="absolute inset-0 rounded-xl overflow-hidden [backface-visibility:hidden]">
+                        <img
+                          src={product.image}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-5 py-4">
+                          <h3 className="text-white text-lg font-semibold leading-tight">{product.title}</h3>
+                          <p className="text-white/80 text-sm mt-0.5">{formatCurrency(product.price)}</p>
+                        </div>
+                      </div>
+
+                      {/* Back — product details + add to basket */}
+                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-gray-50 px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                        <div>
+                          <h3 className="text-xl font-semibold text-black mb-4 leading-snug">{product.title}</h3>
+                          <dl className="space-y-2 text-sm">
+                            {product.dimensions && (
+                              <div className="flex gap-2">
+                                <dt className="font-medium text-gray-800 w-16 shrink-0">Size</dt>
+                                <dd className="text-gray-600">{product.dimensions}</dd>
+                              </div>
+                            )}
+                            {product.medium && (
+                              <div className="flex gap-2">
+                                <dt className="font-medium text-gray-800 w-16 shrink-0">Medium</dt>
+                                <dd className="text-gray-600">{product.medium}</dd>
+                              </div>
+                            )}
+                            {product.year && (
+                              <div className="flex gap-2">
+                                <dt className="font-medium text-gray-800 w-16 shrink-0">Year</dt>
+                                <dd className="text-gray-600">{product.year}</dd>
+                              </div>
+                            )}
+                          </dl>
+                          <p className="mt-5 text-xl font-semibold text-black">{formatCurrency(product.price)}</p>
+                        </div>
+                        <button className="w-full bg-black hover:bg-[#800020] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition">
+                          Add to Basket +
+                        </button>
+                      </div>
+
+                    </div>
                   </article>
                 ))}
               </div>
