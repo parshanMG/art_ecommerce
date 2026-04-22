@@ -1,11 +1,28 @@
+/* ─────────────────────────────────────────────────────────────────────
+   IMPORTS
+───────────────────────────────────────────────────────────────────── */
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
 import Shop from "./components/Shop";
+import { CartProvider } from "./context/CartContext";
 
+/* ─────────────────────────────────────────────────────────────────────
+   HOME PAGE
+   Rendered at the "/" route. Contains:
+     • Hero banner (image + Vimeo background video)
+     • Featured Products Carousel section
+     • Trust-bar strip (shipping / returns / rating)
+───────────────────────────────────────────────────────────────────── */
 function HomePage() {
   return (
     <main className="pt-20">
+
+      {/* ── Hero Banner ─────────────────────────────────────────────
+          Shows a still image on mobile, plays a Vimeo background
+          video on larger screens. Swap the Vimeo ID or image src
+          here to change the banner content.
+      ─────────────────────────────────────────────────────────── */}
       <div className="banner">
         <picture>
           <source
@@ -28,6 +45,7 @@ function HomePage() {
             loading="eager"
           />
         </picture>
+        {/* Vimeo background video — change data-vimeo-id to swap the video */}
         <div
           className="video"
           id="bannerVideo"
@@ -49,12 +67,20 @@ function HomePage() {
         </div>
       </div>
 
+      {/* ── Featured Products Carousel ───────────────────────────────
+          Pulls featured:true products from products.json and shows
+          them in a 3-per-page flip-card carousel.
+      ─────────────────────────────────────────────────────────── */}
       <section className="bg-white pt-8 pb-16">
         <div className="container mx-auto px-4">
           <FeaturedProductsCarousel />
         </div>
       </section>
 
+      {/* ── Trust Bar ───────────────────────────────────────────────
+          Three icon + label tiles on a black background.
+          Edit the text or swap icons in /public/images/Icons/.
+      ─────────────────────────────────────────────────────────── */}
       <section className="bg-black pt-8 pb-5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-1 text-white">
@@ -79,18 +105,26 @@ function HomePage() {
           </div>
         </div>
       </section>
+
     </main>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   APP (ROOT)
+   CartProvider wraps everything so Navbar, Shop, and the Carousel
+   all share the same cart state. Add new routes inside <Routes>.
+───────────────────────────────────────────────────────────────────── */
 export default function App() {
   return (
-    <>
+    <CartProvider>
       <Navbar />
       <Routes>
+        {/* Home page */}
         <Route path="/" element={<HomePage />} />
+        {/* Full shop / all artwork */}
         <Route path="/shop" element={<Shop />} />
       </Routes>
-    </>
+    </CartProvider>
   );
 }

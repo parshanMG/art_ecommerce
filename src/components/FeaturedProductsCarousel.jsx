@@ -1,47 +1,72 @@
+/* ─────────────────────────────────────────────────────────────────────
+   IMPORTS
+───────────────────────────────────────────────────────────────────── */
 import { useEffect, useMemo, useState } from "react";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
+import { useCart } from "../context/CartContext";
 
+/* ─────────────────────────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────────────────────────── */
+// Formats a number as a USD currency string e.g. 1500 → "$1,500.00"
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amount);
 
-export default function FeaturedProductsCarousel() {
-  const [products, setProducts] = useState([]);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+/* ─────────────────────────────────────────────────────────────────────
+   FEATURED PRODUCTS CAROUSEL
+   Displays products that have featured:true in products.json.
+   Cards flip on hover to reveal details + an add/remove basket button.
 
+   Pagination:
+     • pageSize controls how many cards show per slide (default 3)
+     • Arrow buttons cycle through pages
+     • Dot indicators jump to a specific page
+
+   Cart integration:
+     • "Add to Basket +" adds to CartContext and turns the button burgundy
+     • Clicking "Added ✓" removes the item from the cart
+───────────────────────────────────────────────────────────────────── */
+export default function FeaturedProductsCarousel() {
+  const [products, setProducts]   = useState([]);
+  const [pageIndex, setPageIndex] = useState(0);   // which slide page is currently visible
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError]         = useState("");
+
+  // Cart actions and state from CartContext
+  const { addToCart, removeFromCart, cartItems } = useCart();
+
+  // Helper to check if a product is already in the cart
+  const isInCart = (productId) => cartItems.some((item) => item.id === productId);
+
+  /* ── Fetch featured products on mount ── */
   useEffect(() => {
     let isMounted = true;
 
     async function loadProducts() {
       try {
-        const allProducts = await fetchProducts();
+        const allProducts      = await fetchProducts();
+        // getFeaturedProducts filters for available:true && featured:true
         const featuredProducts = getFeaturedProducts(allProducts);
-
-        if (isMounted) {
-          setProducts(featuredProducts);
-        }
+        if (isMounted) setProducts(featuredProducts);
       } catch (loadError) {
-        if (isMounted) {
-          setError(loadError.message || "Failed to load products.");
-        }
+        if (isMounted) setError(loadError.message || "Failed to load products.");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
     loadProducts();
-
-    return () => {
-      isMounted = false;
-    };
+    // Cleanup — prevents state updates if component unmounts before fetch completes
+    return () => { isMounted = false; };
   }, []);
 
+  /* ── Pagination ──────────────────────────────────────────────────
+     Split the products array into chunks of pageSize.
+     To show more/fewer cards per slide, change pageSize.
+  ─────────────────────────────────────────────────────────────── */
   const pageSize = 3;
   const pages = useMemo(() => {
     const chunks = [];
@@ -51,35 +76,35 @@ export default function FeaturedProductsCarousel() {
     return chunks;
   }, [products]);
 
+  // Advance to the next page (wraps around)
   const goNext = () => {
     if (!pages.length) return;
     setPageIndex((prev) => (prev + 1) % pages.length);
   };
 
+  // Go back to the previous page (wraps around)
   const goPrev = () => {
     if (!pages.length) return;
     setPageIndex((prev) => (prev - 1 + pages.length) % pages.length);
   };
 
-  if (isLoading) {
-    return <div className="text-center py-10 text-gray-600">Loading featured products...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-10 text-red-600">{error}</div>;
-  }
-
-  if (!products.length) {
-    return <div className="text-center py-10 text-gray-600">No featured products available right now.</div>;
-  }
+  /* ── Loading / error / empty states ── */
+  if (isLoading) return <div className="text-center py-10 text-gray-600">Loading featured products...</div>;
+  if (error)     return <div className="text-center py-10 text-red-600">{error}</div>;
+  if (!products.length) return <div className="text-center py-10 text-gray-600">No featured products available right now.</div>;
 
   return (
     <div>
+
+      {/* ── Section heading ─────────────────────────────────────── */}
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold">Featured Products</h2>
       </div>
 
+      {/* ── Carousel track + arrow buttons ──────────────────────── */}
       <div className="flex items-center justify-center gap-3 md:gap-6">
+
+        {/* Previous arrow */}
         <button
           type="button"
           aria-label="Previous featured products"
@@ -93,6 +118,11 @@ export default function FeaturedProductsCarousel() {
           />
         </button>
 
+        {/* ── Sliding window ────────────────────────────────────────
+            overflow-hidden clips the off-screen pages.
+            The inner flex div shifts left by pageIndex * 100% to
+            reveal the correct page.
+        ─────────────────────────────────────────────────────────── */}
         <div className="overflow-hidden flex-1">
           <div
             className="flex transition-transform duration-500 ease-in-out"
@@ -101,26 +131,38 @@ export default function FeaturedProductsCarousel() {
             {pages.map((page, idx) => (
               <div key={idx} className="w-full shrink-0 flex flex-col md:flex-row gap-6 md:gap-8">
                 {page.map((product) => (
+
+                  // ── Flip card ─────────────────────────────────────────
+                  // [perspective] on the article enables 3-D depth.
+                  // The inner div rotates 180° on hover.
+                  // Front face: image + title/price overlay
+                  // Back face:  product details + add/remove button
                   <article key={product.id} className="group flex-1 [perspective:1000px]">
                     <div className="relative h-80 md:h-96 w-full transition-transform duration-700 ease-in-out [transition-delay:0ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-hover:[transition-delay:500ms]">
 
-                      {/* Front — image with title/price overlay */}
+                      {/* ── Card front ──────────────────────────────── */}
                       <div className="absolute inset-0 rounded-xl overflow-hidden [backface-visibility:hidden]">
                         <img
                           src={product.image}
                           alt={product.title}
                           className="w-full h-full object-cover"
                         />
+                        {/* Title + price gradient overlay */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-5 py-4">
                           <h3 className="text-white text-lg font-semibold leading-tight">{product.title}</h3>
                           <p className="text-white/80 text-sm mt-0.5">{formatCurrency(product.price)}</p>
                         </div>
                       </div>
 
-                      {/* Back — product details + add to basket */}
+                      {/* ── Card back ───────────────────────────────────
+                          [transform:rotateY(180deg)] pre-rotates the back
+                          so it faces away until the flip completes.
+                      ─────────────────────────────────────────────── */}
                       <div className="absolute inset-0 rounded-xl overflow-hidden bg-gray-50 px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
                         <div>
                           <h3 className="text-xl font-semibold text-black mb-4 leading-snug">{product.title}</h3>
+
+                          {/* Product metadata — only renders if the field exists */}
                           <dl className="space-y-2 text-sm">
                             {product.dimensions && (
                               <div className="flex gap-2">
@@ -141,21 +183,34 @@ export default function FeaturedProductsCarousel() {
                               </div>
                             )}
                           </dl>
+
                           <p className="mt-5 text-xl font-semibold text-black">{formatCurrency(product.price)}</p>
                         </div>
-                        <button className="w-full bg-black hover:bg-[#800020] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition">
-                          Add to Basket +
+
+                        {/* Add / Remove basket toggle button */}
+                        <button
+                          onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
+                          className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                            isInCart(product.id)
+                              ? "bg-[#800020] hover:bg-red-800 text-white"
+                              : "bg-black hover:bg-[#800020] text-white"
+                          }`}
+                        >
+                          {isInCart(product.id) ? "Added ✓" : "Add to Basket +"}
                         </button>
                       </div>
 
                     </div>
                   </article>
+                  // ── End flip card ─────────────────────────────────────
+
                 ))}
               </div>
             ))}
           </div>
         </div>
 
+        {/* Next arrow */}
         <button
           type="button"
           aria-label="Next featured products"
@@ -170,6 +225,10 @@ export default function FeaturedProductsCarousel() {
         </button>
       </div>
 
+      {/* ── Dot indicators ───────────────────────────────────────────
+          One dot per page. Filled black = current page, grey = other.
+          Click a dot to jump directly to that page.
+      ─────────────────────────────────────────────────────────────── */}
       <div className="mt-6 flex justify-center gap-2">
         {pages.map((_, idx) => (
           <button
@@ -180,6 +239,7 @@ export default function FeaturedProductsCarousel() {
           />
         ))}
       </div>
+
     </div>
   );
 }

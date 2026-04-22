@@ -1,8 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+/* ─────────────────────────────────────────────────────────────────────
+   IMPORTS
+───────────────────────────────────────────────────────────────────── */
+import { useEffect, useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { initFlowbite } from "flowbite";
+import { useCart } from "../context/CartContext";
 
-/* ── Flag SVGs (kept inline to match original design) ──────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   FLAG SVG COMPONENTS
+   Inline SVGs kept here so they match the original Flowbite design.
+   These are currently unused in the nav but kept for the language
+   switcher when that feature is added. To remove them, just delete
+   the four const blocks below.
+───────────────────────────────────────────────────────────────────── */
 
 const UsFlag = () => (
   <svg className="h-4 w-4 me-1.5" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -43,39 +53,34 @@ const CnFlag = () => (
   </svg>
 );
 
-/* ── Navbar Component ──────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   NAVBAR COMPONENT
+   Fixed to the top of every page (z-40). Contains:
+     • Logo + site name (left)
+     • Nav links — Home, Shop, About, Contact (centre)
+     • Cart icon with badge + cart dropdown (right)
+     • Hamburger toggle for mobile (right)
 
+   Cart state comes from CartContext — no local cart state here.
+───────────────────────────────────────────────────────────────────── */
 export default function Navbar() {
+  // Controls whether the cart dropdown is visible
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
 
-  const subtotal = useMemo(
-    () => cartItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1), 0),
-    [cartItems]
-  );
+  // Pull cart data and actions from the global CartContext
+  const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
 
+  // Initialise Flowbite (needed for the hamburger collapse toggle)
   useEffect(() => {
     initFlowbite();
   }, []);
 
-  useEffect(() => {
-    try {
-      const savedCartItems = localStorage.getItem("cartItems");
-      if (!savedCartItems) return;
-
-      const parsedItems = JSON.parse(savedCartItems);
-      if (Array.isArray(parsedItems)) {
-        setCartItems(parsedItems);
-      }
-    } catch {
-      setCartItems([]);
-    }
-  }, []);
-
+  /* ── Handlers ── */
   const handleCartToggle = () => {
     setIsCartOpen((prev) => !prev);
   };
 
+  // Placeholder until the real checkout flow is built
   const handleCheckout = () => {
     if (!cartItems.length) return;
     window.alert("Checkout flow coming soon.");
@@ -83,9 +88,13 @@ export default function Navbar() {
 
   return (
     <>
+      {/* ── Fixed top nav bar ──────────────────────────────────────── */}
       <nav className="bg-black fixed w-full z-40 top-0 start-0">
       <div className="relative w-full flex flex-wrap items-center justify-between gap-y-4 px-4 py-4 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-6 md:px-8 xl:px-12">
-        {/* Logo */}
+
+        {/* ── Logo ─────────────────────────────────────────────────
+            Change the src in the <img> or the text below to rebrand.
+        ───────────────────────────────────────────────────────── */}
         <Link to="/" className="flex items-center space-x-3 rtl:space-x-reverse md:justify-self-start">
           <img src="/images/MM.png" className="h-12" alt="Logo" />
           <span className="self-center text-2xl text-white whitespace-nowrap island-moments font-medium">
@@ -93,7 +102,11 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Nav links */}
+        {/* ── Nav Links ────────────────────────────────────────────
+            Hidden on mobile (shown by hamburger toggle).
+            Add or remove <li> items here to change the nav menu.
+            NavLink automatically applies the active colour class.
+        ───────────────────────────────────────────────────────── */}
         <div
           className="items-center justify-center hidden w-full md:flex md:w-auto md:justify-self-center"
           id="navbar-language"
@@ -106,21 +119,28 @@ export default function Navbar() {
               <NavLink to="/shop" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 ${isActive ? "text-[#800020]" : "text-white md:hover:text-[#800020]"}`}>Shop</NavLink>
             </li>
             <li>
+              {/* TODO: wire up to an /about route when that page is built */}
               <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">About</a>
             </li>
             <li>
+              {/* TODO: wire up to a /contact route when that page is built */}
               <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">Contact</a>
             </li>
           </ul>
         </div>
 
-        {/* Right side: icons + hamburger */}
+        {/* ── Right Side: Cart Icon + Hamburger ────────────────────── */}
         <div className="relative flex items-center justify-end gap-1 md:justify-self-end">
-          {/* Shop icon */}
+
+          {/* ── Cart Icon Button ───────────────────────────────────
+              The burgundy badge shows cartCount (total units).
+              Switches to the burgundy cart icon when dropdown is open.
+              Badge hidden when cart is empty.
+          ───────────────────────────────────────────────────────── */}
           <button
             type="button"
             onClick={handleCartToggle}
-            className="inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg text-gray-300 hover:text-white focus:outline-none  "
+            className="relative inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg text-gray-300 hover:text-white focus:outline-none"
             aria-label="Open cart"
             aria-expanded={isCartOpen}
             aria-controls="shopping-cart-dropdown"
@@ -130,15 +150,30 @@ export default function Navbar() {
               alt="Shopping cart"
               className="w-6 h-6 object-contain"
             />
+            {/* Badge — only visible when there are items in the cart */}
+            {cartCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#800020] text-[10px] font-semibold text-white">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
           </button>
 
+          {/* ── Cart Dropdown ──────────────────────────────────────
+              Slides in below the cart icon. Visibility toggled by
+              isCartOpen. Clicking the backdrop overlay (below) also
+              closes it.
+
+              To change the dropdown width, adjust w-[26rem].
+              To change how many items show before scrolling, adjust max-h-96.
+          ───────────────────────────────────────────────────────── */}
           <div
             id="shopping-cart-dropdown"
-            className={`absolute right-0 top-full mt-3 w-[20rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl transition-all duration-200 ${
+            className={`absolute right-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl transition-all duration-200 ${
               isCartOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
             }`}
             aria-hidden={!isCartOpen}
           >
+            {/* Dropdown header */}
             <div className="flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-semibold text-black">My Cart</h2>
               <button
@@ -151,24 +186,51 @@ export default function Navbar() {
               </button>
             </div>
 
-            <div className="max-h-72 overflow-y-auto py-4">
+            {/* ── Cart Items List ──────────────────────────────────
+                Scrollable list of cart items.
+                Each row: thumbnail | title + medium + qty + price | remove ✕
+            ─────────────────────────────────────────────────── */}
+            <div className="max-h-96 overflow-y-auto py-4">
               {!cartItems.length ? (
                 <p className="text-sm text-gray-600">Your cart is empty.</p>
               ) : (
                 <ul className="space-y-3">
                   {cartItems.map((item) => (
-                    <li key={item.id} className="rounded-xl border border-gray-200 p-3">
-                      <p className="font-medium text-sm text-black">{item.title}</p>
-                      <div className="mt-1 flex items-center justify-between text-sm text-gray-600">
-                        <span>Qty: {item.quantity || 1}</span>
-                        <span>${Number(item.price || 0).toFixed(2)}</span>
+                    <li key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3">
+                      {/* Product thumbnail */}
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                      />
+                      {/* Product details */}
+                      <div className="flex flex-1 flex-col gap-1 min-w-0">
+                        <p className="truncate font-medium text-sm text-black">{item.title}</p>
+                        <p className="text-xs text-gray-500">{item.medium}</p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Qty: {item.quantity}</span>
+                          <span className="font-semibold text-black">${Number(item.price || 0).toFixed(2)}</span>
+                        </div>
                       </div>
+                      {/* Remove item button */}
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="shrink-0 self-start text-gray-400 hover:text-red-500 text-xs"
+                        aria-label={`Remove ${item.title} from cart`}
+                      >
+                        ✕
+                      </button>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
 
+            {/* ── Subtotal + Checkout ─────────────────────────────
+                Checkout button is disabled when the cart is empty.
+                Replace handleCheckout with real checkout logic later.
+            ─────────────────────────────────────────────────── */}
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Subtotal</span>
@@ -185,7 +247,10 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Hamburger */}
+          {/* ── Hamburger (mobile only) ───────────────────────────
+              Flowbite's data-collapse-toggle handles the show/hide
+              of the #navbar-language menu on small screens.
+          ───────────────────────────────────────────────────────── */}
           <button
             data-collapse-toggle="navbar-language"
             type="button"
@@ -198,10 +263,15 @@ export default function Navbar() {
               <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="M5 7h14M5 12h14M5 17h14" />
             </svg>
           </button>
+
         </div>
       </div>
       </nav>
 
+      {/* ── Backdrop overlay ─────────────────────────────────────────
+          Transparent full-screen button that closes the cart dropdown
+          when the user clicks anywhere outside of it.
+      ─────────────────────────────────────────────────────────────── */}
       {isCartOpen && (
         <button
           type="button"
