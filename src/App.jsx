@@ -3,8 +3,11 @@
 ───────────────────────────────────────────────────────────────────── */
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
 import Shop from "./components/Shop";
+import Contact from "./components/Contact";
+import AboutArtist from "./components/AboutArtist";
 import { CartProvider } from "./context/CartContext";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -16,62 +19,26 @@ import { CartProvider } from "./context/CartContext";
 ───────────────────────────────────────────────────────────────────── */
 function HomePage() {
   return (
-    <main className="pt-20">
+    <main className="pt-0">
 
       {/* ── Hero Banner ─────────────────────────────────────────────
-          Shows a still image on mobile, plays a Vimeo background
-          video on larger screens. Swap the Vimeo ID or image src
-          here to change the banner content.
+          Ken Burns slideshow over three product images.
+          Swap images, adjust zoom, or change timing in
+          src/components/HeroBanner.jsx.
       ─────────────────────────────────────────────────────────── */}
-      <div className="banner">
-        <picture>
-          <source
-            srcSet="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=576&height=324&quality=85"
-            media="(max-width: 575.98px)"
-          />
-          <source
-            srcSet="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=768&height=432&quality=85"
-            media="(max-width: 767.98px)"
-          />
-          <source
-            srcSet="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=992&height=558&quality=85"
-            media="(max-width: 991.98px)"
-          />
-          <img
-            className="image"
-            id="bannerImage"
-            src="/media/f1ib0cwv/animated-banner-sprin-still-_v2.png?width=1920&height=1080&quality=85"
-            alt=""
-            loading="eager"
-          />
-        </picture>
-        {/* Vimeo background video — change data-vimeo-id to swap the video */}
-        <div
-          className="video"
-          id="bannerVideo"
-          data-vimeo-id="1163953602"
-          data-vimeo-background="true"
-          data-vimeo-responsive="true"
-          data-vimeo-initialized="true"
-        >
-          <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
-            <iframe
-              src="https://player.vimeo.com/video/1163953602?loop=1&background=1&app_id=122963"
-              frameBorder="0"
-              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-              title="Home page animated banner - (Spring)"
-            ></iframe>
-          </div>
-        </div>
-      </div>
+      <HeroBanner />
+
+      {/* ── About the Artist ────────────────────────────────────────
+          Image left, bio text centre, botanical SVG right.
+          Edit text and image in src/components/AboutArtist.jsx.
+      ─────────────────────────────────────────────────────────── */}
+      <AboutArtist />
 
       {/* ── Featured Products Carousel ───────────────────────────────
           Pulls featured:true products from products.json and shows
           them in a 3-per-page flip-card carousel.
       ─────────────────────────────────────────────────────────── */}
-      <section className="bg-white pt-8 pb-16">
+      <section className="bg-[#F6F1EB] pt-8 pb-16">
         <div className="container mx-auto px-4">
           <FeaturedProductsCarousel />
         </div>
@@ -81,7 +48,7 @@ function HomePage() {
           Three icon + label tiles on a black background.
           Edit the text or swap icons in /public/images/Icons/.
       ─────────────────────────────────────────────────────────── */}
-      <section className="bg-black pt-8 pb-5">
+      <section className="bg-[#2F2A26] pt-8 pb-5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-1 text-white">
             <h2 className="text-2xl font-bold">Welcome To My Website</h2>
@@ -124,6 +91,8 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         {/* Full shop / all artwork */}
         <Route path="/shop" element={<Shop />} />
+        {/* Contact / enquiry page */}
+        <Route path="/contact" element={<Contact />} />
       </Routes>
     </CartProvider>
   );

@@ -2,6 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 
@@ -55,25 +56,25 @@ function ProductCard({ product }) {
           ─────────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-2">
             {/* TODO: wire Buy Now to the checkout / payment flow */}
-            <button className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium ring-1 ring-white/50 transition hover:bg-[#800020]">
+            <button className="rounded-lg bg-[#D98C7A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#bf7360]">
               Buy Now
             </button>
             <button
               onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium ring-1 transition ${
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 inCart
-                  ? "bg-[#800020] ring-[#800020] text-white hover:bg-red-800"
-                  : "bg-white/10 ring-white/50 hover:bg-[#800020]"
+                  ? "bg-[#6F8F8B] text-white hover:bg-[#5a7876]"
+                  : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
               }`}
             >
               {inCart ? "Added ✓" : "Add to Basket +"}
             </button>
-            <a
-              href={`/enquiry?product=${product.id}`}
-              className="rounded-lg bg-white/10 px-4 py-2 text-center text-sm font-medium ring-1 ring-white/50 transition hover:bg-[#800020]"
+            <Link
+              to={`/contact?product=${product.id}`}
+              className="rounded-lg bg-[#D98C7A] px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-[#bf7360]"
             >
               Enquire
-            </a>
+            </Link>
           </div>
 
         </div>
@@ -114,13 +115,13 @@ export default function Shop() {
   }, []);
 
   return (
-    <main className="min-h-screen relative bg-white pt-28 pb-16">
+    <main className="min-h-screen relative bg-[#F6F1EB] pt-28 pb-16">
 
       {/* ── Page header ───────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
         <div className="mb-10 border-b border-gray-200 pb-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-[#800020]">Shop</p>
-          <h1 className="mt-3 text-4xl font-semibold text-black">All Artwork</h1>
+          <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Shop</p>
+          <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">All Artwork</h1>
           <p className="mt-4 max-w-2xl text-base text-gray-600">
             Browse the full collection of original paintings and limited-edition prints.
           </p>

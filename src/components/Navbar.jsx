@@ -2,7 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import { useCart } from "../context/CartContext";
 
@@ -66,6 +66,13 @@ const CnFlag = () => (
 export default function Navbar() {
   // Controls whether the cart dropdown is visible
   const [isCartOpen, setIsCartOpen] = useState(false);
+  // True once the user has scrolled past the hero banner
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
+  // Navbar is transparent only on the home page when not scrolled
+  const isTransparent = isHome && !isScrolled;
 
   // Pull cart data and actions from the global CartContext
   const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
@@ -73,6 +80,18 @@ export default function Navbar() {
   // Initialise Flowbite (needed for the hamburger collapse toggle)
   useEffect(() => {
     initFlowbite();
+  }, []);
+
+  /* ── Scroll listener ──────────────────────────────────────────────
+     Switches the navbar from transparent to solid once the user
+     scrolls past 200 px (roughly the navbar height).
+     To change the threshold, adjust the 200 value below.
+  ─────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    const getThreshold = () => (window.innerWidth < 768 ? 50 : 300);
+    const onScroll = () => setIsScrolled(window.scrollY > getThreshold());
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   /* ── Handlers ── */
@@ -88,19 +107,30 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ── Fixed top nav bar ──────────────────────────────────────── */}
-      <nav className="bg-black fixed w-full z-40 top-0 start-0">
+      {/* ── Fixed top nav bar ──────────────────────────────────────────
+          Transparent over the hero banner; becomes solid once scrolled.
+          To change the scroll threshold, adjust the value in the
+          useEffect scroll listener above (default 80 px).
+      ─────────────────────────────────────────────────────────────── */}
+      <nav className={`fixed w-full z-40 top-0 start-0 transition-all duration-900 ${
+        isTransparent
+          ? "bg-transparent border-b border-transparent"
+          : "bg-[#F6F1EB] border-b border-[#E8DCD0] shadow-sm"
+      }`}>
       <div className="relative w-full flex flex-wrap items-center justify-between gap-y-4 px-4 py-4 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-6 md:px-8 xl:px-12">
 
         {/* ── Logo ─────────────────────────────────────────────────
             Change the src in the <img> or the text below to rebrand.
-        ───────────────────────────────────────────────────────── */}
-        <Link to="/" className="flex items-center space-x-3 rtl:space-x-reverse md:justify-self-start">
+
+          <Link to="/" className="flex items-center space-x-3 rtl:space-x-reverse md:justify-self-start">
           <img src="/images/MM.png" className="h-12" alt="Logo" />
-          <span className="self-center text-2xl text-white whitespace-nowrap island-moments font-medium">
+        ───────────────────────────────────────────────────────── */}
+
+          <span className={`self-center text-2xl whitespace-nowrap island-moments font-medium transition-colors duration-300 ${
+            isTransparent ? "text-white" : "text-[#2F2A26]"
+          }`}>
             Maryam Mohseni
           </span>
-        </Link>
 
         {/* ── Nav Links ────────────────────────────────────────────
             Hidden on mobile (shown by hamburger toggle).
@@ -113,18 +143,37 @@ export default function Navbar() {
         >
           <ul className="font-medium flex flex-col items-center gap-2 p-4 border rounded-lg md:flex-row md:gap-8 md:p-0 md:mt-0 md:border-0">
             <li>
-              <NavLink to="/" end className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:p-0 ${isActive ? "text-[#800020]" : "text-white md:hover:text-[#800020]"}`}>Home</NavLink>
+              <NavLink to="/" end className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:p-0 transition-colors duration-300 ${
+                isActive
+                  ? "text-[#D98C7A]"
+                  : isTransparent
+                    ? "text-white/90 md:hover:text-[#D98C7A]"
+                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              }`}>Home</NavLink>
             </li>
             <li>
-              <NavLink to="/shop" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 ${isActive ? "text-[#800020]" : "text-white md:hover:text-[#800020]"}`}>Shop</NavLink>
+              <NavLink to="/shop" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
+                isActive
+                  ? "text-[#D98C7A]"
+                  : isTransparent
+                    ? "text-white/90 md:hover:text-[#D98C7A]"
+                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              }`}>Shop</NavLink>
             </li>
             <li>
               {/* TODO: wire up to an /about route when that page is built */}
-              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">About</a>
+              <a href="#" className={`block py-2 px-3 rounded md:hover:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
+                isTransparent ? "text-white/90 md:hover:text-[#D98C7A]" : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              }`}>About</a>
             </li>
             <li>
-              {/* TODO: wire up to a /contact route when that page is built */}
-              <a href="#" className="block py-2 px-3 text-white rounded md:hover:bg-transparent md:border-0 md:hover:text-[#800020] md:p-0">Contact</a>
+              <NavLink to="/contact" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
+                isActive
+                  ? "text-[#D98C7A]"
+                  : isTransparent
+                    ? "text-white/90 md:hover:text-[#D98C7A]"
+                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              }`}>Contact</NavLink>
             </li>
           </ul>
         </div>
@@ -133,26 +182,41 @@ export default function Navbar() {
         <div className="relative flex items-center justify-end gap-1 md:justify-self-end">
 
           {/* ── Cart Icon Button ───────────────────────────────────
-              The burgundy badge shows cartCount (total units).
-              Switches to the burgundy cart icon when dropdown is open.
-              Badge hidden when cart is empty.
+              Inline SVG cart icon — colour is driven purely by the
+              button's text colour class, so you can change it any
+              time by swapping the Tailwind colour values below:
+                Default:  text-[#2F2A26]   (dark brown)
+                Open:     text-[#D98C7A]   (terracotta accent)
+                Hover:    hover:text-[#D98C7A]
+              Badge background: bg-[#D98C7A] — change to any colour.
           ───────────────────────────────────────────────────────── */}
           <button
             type="button"
             onClick={handleCartToggle}
-            className="relative inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg text-gray-300 hover:text-white focus:outline-none"
+            className={`relative inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg focus:outline-none transition-colors ${
+              isCartOpen
+                ? "text-[#D98C7A]"
+                : isTransparent
+                  ? "text-white hover:text-[#D98C7A]"
+                  : "text-[#2F2A26] hover:text-[#D98C7A]"
+            }`}
             aria-label="Open cart"
             aria-expanded={isCartOpen}
             aria-controls="shopping-cart-dropdown"
           >
-            <img
-              src={isCartOpen ? "/images/Icons/shopping_cart_burgundy.png" : "/images/Icons/shopping_cart_icon.png"}
-              alt="Shopping cart"
-              className="w-6 h-6 object-contain"
-            />
-            {/* Badge — only visible when there are items in the cart */}
+            {/* Material Design shopping-cart SVG — currentColor inherits the button text colour */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6"
+              aria-hidden="true"
+            >
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.17 14l.03-.12.9-1.63A1 1 0 0 1 9 12h8a1 1 0 0 0 .93-.63l2.05-4.68A1 1 0 0 0 19.05 5H5.21L4.27 3H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7.42a.25.25 0 0 1-.25-.25z"/>
+            </svg>
+            {/* Badge — change bg-[#D98C7A] to any colour to retheme the counter dot */}
             {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#800020] text-[10px] font-semibold text-white">
+              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D98C7A] text-[10px] font-semibold text-white">
                 {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
@@ -168,14 +232,14 @@ export default function Navbar() {
           ───────────────────────────────────────────────────────── */}
           <div
             id="shopping-cart-dropdown"
-            className={`absolute right-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl transition-all duration-200 ${
+            className={`absolute right-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#E8DCD0] bg-[#F6F1EB] p-4 shadow-2xl transition-all duration-200 ${
               isCartOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
             }`}
             aria-hidden={!isCartOpen}
           >
             {/* Dropdown header */}
             <div className="flex items-center justify-between border-b pb-3">
-              <h2 className="text-lg font-semibold text-black">My Cart</h2>
+              <h2 className="text-lg font-semibold text-[#2F2A26]">My Cart</h2>
               <button
                 type="button"
                 onClick={handleCartToggle}
@@ -205,11 +269,11 @@ export default function Navbar() {
                       />
                       {/* Product details */}
                       <div className="flex flex-1 flex-col gap-1 min-w-0">
-                        <p className="truncate font-medium text-sm text-black">{item.title}</p>
+                        <p className="truncate font-medium text-sm text-[#2F2A26]">{item.title}</p>
                         <p className="text-xs text-gray-500">{item.medium}</p>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Qty: {item.quantity}</span>
-                          <span className="font-semibold text-black">${Number(item.price || 0).toFixed(2)}</span>
+                          <span className="font-semibold text-[#2F2A26]">${Number(item.price || 0).toFixed(2)}</span>
                         </div>
                       </div>
                       {/* Remove item button */}
@@ -234,13 +298,13 @@ export default function Navbar() {
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Subtotal</span>
-                <span className="font-semibold text-black">${subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-[#2F2A26]">${subtotal.toFixed(2)}</span>
               </div>
               <button
                 type="button"
                 onClick={handleCheckout}
                 disabled={!cartItems.length}
-                className="w-full rounded-xl bg-black py-3 text-white transition hover:bg-[#800020] disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="w-full rounded-xl bg-[#D98C7A] py-3 text-white transition hover:bg-[#bf7360] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 Checkout
               </button>
@@ -254,7 +318,9 @@ export default function Navbar() {
           <button
             data-collapse-toggle="navbar-language"
             type="button"
-            className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-300 rounded-lg md:hidden hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-600"
+            className={`inline-flex items-center p-2 w-10 h-10 justify-center text-sm rounded-lg md:hidden focus:outline-none focus:ring-2 focus:ring-[#D98C7A] transition-colors ${
+              isTransparent ? "text-white hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
+            }`}
             aria-controls="navbar-language"
             aria-expanded="false"
           >

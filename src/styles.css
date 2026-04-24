@@ -19,6 +19,8 @@ button {
 
 body {
   margin: 0;
+  background-color: #F6F1EB; /* theme background */
+  color: #2F2A26;             /* theme text */
 }
 
 .island-moments {

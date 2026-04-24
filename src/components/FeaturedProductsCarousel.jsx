@@ -2,6 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 
@@ -96,9 +97,21 @@ export default function FeaturedProductsCarousel() {
   return (
     <div>
 
-      {/* ── Section heading ─────────────────────────────────────── */}
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold">Featured Products</h2>
+      {/* ── Section heading ─────────────────────────────────────────
+          Left: small uppercase label + main title.
+          Right: "VIEW ALL WORKS →" link — mirrors the reference layout.
+      ─────────────────────────────────────────────────────────────── */}
+      <div className="flex items-end justify-between mb-8">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-[#6F8F8B] mb-1">Featured Works</p>
+          <h2 className="text-3xl font-semibold text-[#2F2A26]">Recent Paintings</h2>
+        </div>
+        <Link
+          to="/shop"
+          className="text-sm font-medium text-[#2F2A26] hover:text-[#D98C7A] transition tracking-wide flex items-center gap-1.5 pb-1"
+        >
+          VIEW ALL WORKS <span aria-hidden="true">→</span>
+        </Link>
       </div>
 
       {/* ── Carousel track + arrow buttons ──────────────────────── */}
@@ -109,7 +122,7 @@ export default function FeaturedProductsCarousel() {
           type="button"
           aria-label="Previous featured products"
           onClick={goPrev}
-          className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-gray-200 transition rounded-full flex items-center justify-center"
+          className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-[#E8DCD0] transition rounded-full flex items-center justify-center"
         >
           <img
             src="/images/Icons/arrow_back_ios_new_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png"
@@ -158,33 +171,33 @@ export default function FeaturedProductsCarousel() {
                           [transform:rotateY(180deg)] pre-rotates the back
                           so it faces away until the flip completes.
                       ─────────────────────────────────────────────── */}
-                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-gray-50 px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-[#E8DCD0] px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
                         <div>
-                          <h3 className="text-xl font-semibold text-black mb-4 leading-snug">{product.title}</h3>
+                          <h3 className="text-xl font-semibold text-[#2F2A26] mb-4 leading-snug">{product.title}</h3>
 
                           {/* Product metadata — only renders if the field exists */}
                           <dl className="space-y-2 text-sm">
                             {product.dimensions && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-gray-800 w-16 shrink-0">Size</dt>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Size</dt>
                                 <dd className="text-gray-600">{product.dimensions}</dd>
                               </div>
                             )}
                             {product.medium && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-gray-800 w-16 shrink-0">Medium</dt>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Medium</dt>
                                 <dd className="text-gray-600">{product.medium}</dd>
                               </div>
                             )}
                             {product.year && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-gray-800 w-16 shrink-0">Year</dt>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Year</dt>
                                 <dd className="text-gray-600">{product.year}</dd>
                               </div>
                             )}
                           </dl>
 
-                          <p className="mt-5 text-xl font-semibold text-black">{formatCurrency(product.price)}</p>
+                          <p className="mt-5 text-xl font-semibold text-[#2F2A26]">{formatCurrency(product.price)}</p>
                         </div>
 
                         {/* Add / Remove basket toggle button */}
@@ -192,8 +205,8 @@ export default function FeaturedProductsCarousel() {
                           onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
                           className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition ${
                             isInCart(product.id)
-                              ? "bg-[#800020] hover:bg-red-800 text-white"
-                              : "bg-black hover:bg-[#800020] text-white"
+                              ? "bg-[#D98C7A] hover:bg-[#bf7360] text-white"
+                              : "bg-[#D98C7A] hover:bg-[#bf7360] text-white"
                           }`}
                         >
                           {isInCart(product.id) ? "Added ✓" : "Add to Basket +"}
@@ -215,7 +228,7 @@ export default function FeaturedProductsCarousel() {
           type="button"
           aria-label="Next featured products"
           onClick={goNext}
-          className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-gray-200 transition rounded-full flex items-center justify-center"
+          className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-[#E8DCD0] transition rounded-full flex items-center justify-center"
         >
           <img
             src="/images/Icons/arrow_forward_ios_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png"
@@ -225,17 +238,14 @@ export default function FeaturedProductsCarousel() {
         </button>
       </div>
 
-      {/* ── Dot indicators ───────────────────────────────────────────
-          One dot per page. Filled black = current page, grey = other.
-          Click a dot to jump directly to that page.
-      ─────────────────────────────────────────────────────────────── */}
+      {/* ── Dot indicators ──────────────────────────────────────────── */}
       <div className="mt-6 flex justify-center gap-2">
         {pages.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setPageIndex(idx)}
             aria-label={`Go to slide ${idx + 1}`}
-            className={`w-2.5 h-2.5 rounded-full transition ${idx === pageIndex ? "bg-black" : "bg-gray-300"}`}
+            className={`w-2.5 h-2.5 rounded-full transition ${idx === pageIndex ? "bg-[#D98C7A]" : "bg-[#E8DCD0]"}`}
           />
         ))}
       </div>
