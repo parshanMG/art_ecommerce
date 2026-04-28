@@ -9,6 +9,7 @@ import Shop from "./components/Shop";
 import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
 import { CartProvider } from "./context/CartContext";
+import Footer from "./components/Footer";
 
 /* ─────────────────────────────────────────────────────────────────────
    HOME PAGE
@@ -94,6 +95,7 @@ export default function App() {
         {/* Contact / enquiry page */}
         <Route path="/contact" element={<Contact />} />
       </Routes>
+      <Footer />
     </CartProvider>
   );
 }
