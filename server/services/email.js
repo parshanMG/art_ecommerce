@@ -2,6 +2,18 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 const ses = new SESClient({ region: process.env.AWS_REGION });
 
+/* Escapes characters that have special meaning in HTML.
+   Always call this on any user-supplied value before inserting
+   it into an HTML email body to prevent XSS. */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /* Low-level helper — send a plain-text + HTML email via SES.
    All higher-level email functions (contact notification,
    order confirmation, etc.) call this. */
@@ -39,7 +51,7 @@ export async function sendContactNotification({ name, email, subject, message })
   const ownerEmail = process.env.OWNER_EMAIL;
   const emailSubject = `New contact form submission: ${subject}`;
   const emailText = `Name: ${name}\nEmail: ${email}\nMessage: ${message}`;
-  const emailHtml = `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Message:</strong> ${message}</p>`;
+  const emailHtml = `<p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Message:</strong> ${escapeHtml(message)}</p>`;
   await sendEmail({ to: ownerEmail, subject: emailSubject, text: emailText, html: emailHtml });
 }
 
@@ -48,7 +60,7 @@ export async function sendContactConfirmation({ name, email }) {
   // TODO: call sendEmail with user address and confirmation body
   const emailSubject = "Thank you for contacting us!";
   const emailText = `Hi ${name},\n\nThank you for reaching out! We have received your message and will get back to you as soon as possible.\n\nBest regards,\nThe Team`;
-  const emailHtml = `<p>Hi ${name},</p><p>Thank you for reaching out! We have received your message and will get back to you as soon as possible.</p><p>Best regards,<br>The Team</p>`;
+  const emailHtml = `<p>Hi ${escapeHtml(name)},</p><p>Thank you for reaching out! We have received your message and will get back to you as soon as possible.</p><p>Best regards,<br>The Team</p>`;
   await sendEmail({ to: email, subject: emailSubject, text: emailText, html: emailHtml });
 }
 
@@ -56,7 +68,7 @@ export async function sendContactConfirmation({ name, email }) {
 export async function sendOrderConfirmation({ buyerName, buyerEmail, items, total }) {
   // TODO: call sendEmail with order summary body
   const emailSubject = "Order Confirmation";
-  const emailText = `Hi ${buyerName},\n\nThank you for your purchase! Here is a summary of your order:\n\n${items.map(item => `- ${item.name}: ${item.quantity} x $${item.price}`).join("\n")}\n\nTotal: $${total}\n\nBest regards,\nThe Team`;
-  const emailHtml = `<p>Hi ${buyerName},</p><p>Thank you for your purchase! Here is a summary of your order:</p><ul>${items.map(item => `<li>${item.name}: ${item.quantity} x $${item.price}</li>`).join("")}</ul><p><strong>Total:</strong> $${total}</p><p>Best regards,<br>The Team</p>`;
+  const emailText = `Hi ${buyerName},\n\nThank you for your purchase! Here is a summary of your order:\n\n${items.map(item => `- ${item.title}: $${item.price}`).join("\n")}\n\nTotal: $${total}\n\nBest regards,\nThe Team`;
+  const emailHtml = `<p>Hi ${escapeHtml(buyerName)},</p><p>Thank you for your purchase! Here is a summary of your order:</p><ul>${items.map(item => `<li>${escapeHtml(item.title)}: $${item.price}</li>`).join("")}</ul><p><strong>Total:</strong> $${total}</p><p>Best regards,<br>The Team</p>`;
   await sendEmail({ to: buyerEmail, subject: emailSubject, text: emailText, html: emailHtml });
 }

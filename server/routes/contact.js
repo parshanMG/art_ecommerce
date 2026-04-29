@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { body } from "express-validator";
 import { validateRequest } from "../middleware/validateRequest.js";
+import { sendContactNotification, sendContactConfirmation } from "../services/email.js";
 
 const router = Router();
 
@@ -17,7 +18,16 @@ router.post(
   ],
   validateRequest,
   async (req, res, next) => {
-    // TODO: send owner notification email + user confirmation via SES
+    try {
+      const { name, email, subject, message } = req.body;
+      await Promise.all([
+        sendContactNotification({ name, email, subject, message }),
+        sendContactConfirmation({ name, email }),
+      ]);
+      res.status(200).json({ success: true });
+    } catch (err) {
+      next(err);
+    }
   }
 );
 
