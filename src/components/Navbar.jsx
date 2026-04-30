@@ -2,7 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import { useCart } from "../context/CartContext";
 
@@ -74,6 +74,8 @@ export default function Navbar() {
   // Navbar is transparent only on the home page when not scrolled
   const isTransparent = isHome && !isScrolled;
 
+  const navigate = useNavigate();
+
   // Pull cart data and actions from the global CartContext
   const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
 
@@ -99,10 +101,11 @@ export default function Navbar() {
     setIsCartOpen((prev) => !prev);
   };
 
-  // Placeholder until the real checkout flow is built
+  // Close the cart dropdown and navigate to the checkout page
   const handleCheckout = () => {
     if (!cartItems.length) return;
-    window.alert("Checkout flow coming soon.");
+    setIsCartOpen(false);
+    navigate("/checkout");
   };
 
   return (

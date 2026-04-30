@@ -1,15 +1,31 @@
 /* ─────────────────────────────────────────────────────────────────────
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
 import Shop from "./components/Shop";
 import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
+import Checkout from "./components/Checkout";
 import { CartProvider } from "./context/CartContext";
 import Footer from "./components/Footer";
+
+/* ─────────────────────────────────────────────────────────────────────
+   PAGE TRANSITION
+   Wraps each route's content. The key prop on this div changes on
+   every navigation, which remounts the element and re-fires the
+   page-enter CSS animation defined in styles.css.
+───────────────────────────────────────────────────────────────────── */
+function PageTransition({ children }) {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="page-enter">
+      {children}
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    HOME PAGE
@@ -89,11 +105,13 @@ export default function App() {
       <Navbar />
       <Routes>
         {/* Home page */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
         {/* Full shop / all artwork */}
-        <Route path="/shop" element={<Shop />} />
+        <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
         {/* Contact / enquiry page */}
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+        {/* Checkout */}
+        <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
       </Routes>
       <Footer />
     </CartProvider>

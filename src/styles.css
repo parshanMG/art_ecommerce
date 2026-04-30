@@ -27,5 +27,62 @@ body {
   font-family: "Island Moments", cursive;
 }
 
+/* ── Page transition ────────────────────────────────────────────────
+   Every route mounts with a gentle fade + upward drift.
+   Applied by the <PageTransition> wrapper in App.jsx.
+──────────────────────────────────────────────────────────────────── */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
+.page-enter {
+  animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Card entrance ──────────────────────────────────────────────────
+   Cards fade in and rise from slightly below.
+   Stagger delay is set inline via --card-delay CSS variable.
+──────────────────────────────────────────────────────────────────── */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-enter {
+  animation: card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+/* Cards start invisible until the IntersectionObserver triggers the class */
+.card-hidden {
+  opacity: 0;
+}
+
+/* ── Category beacon ────────────────────────────────────────────────
+   A terracotta ring pulses outward from the first card of a category
+   when that category becomes active (via sidebar click or scroll).
+   Applied to a wrapper div so it doesn't conflict with card-enter.
+──────────────────────────────────────────────────────────────────── */
+@keyframes category-beacon {
+  0%   { box-shadow: 0 0 0 0px  rgba(217, 140, 122, 0.75); }
+  55%  { box-shadow: 0 0 0 10px rgba(217, 140, 122, 0.12); }
+  100% { box-shadow: 0 0 0 16px rgba(217, 140, 122, 0);    }
+}
+
+.category-beacon {
+  animation: category-beacon 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
 

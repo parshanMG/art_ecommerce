@@ -1,10 +1,25 @@
-/* ─────────────────────────────────────────────────────────────────────
-   IMPORTS
-───────────────────────────────────────────────────────────────────── */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
+import { useInView } from "../hooks/useInView";
+
+/* ─────────────────────────────────────────────────────────────────────
+   CATEGORY METADATA
+   Controls sidebar label and sort order. Add entries here as the
+   collection grows — products.json category values must match these keys.
+───────────────────────────────────────────────────────────────────── */
+const CATEGORY_META = {
+  watercolour:   { label: "Watercolour",   order: 1 },
+  calligraphy:   { label: "Calligraphy",   order: 2 },
+  oil:           { label: "Oil on Canvas", order: 3 },
+  acrylic:       { label: "Acrylic",       order: 4 },
+  "mixed-media": { label: "Mixed Media",   order: 5 },
+  print:         { label: "Prints",        order: 6 },
+};
+
+// Height of each slot in the drum roller (3 slots are visible at once)
+const ITEM_H = 112;
 
 /* ─────────────────────────────────────────────────────────────────────
    PRODUCT CARD
@@ -14,13 +29,21 @@ import { useCart } from "../context/CartContext";
    Props:
      product — a single product object from products.json
 ───────────────────────────────────────────────────────────────────── */
-function ProductCard({ product }) {
+function ProductCard({ product, index = 0 }) {
   const { addToCart, removeFromCart, cartItems } = useCart();
-  // Check once whether this product is already in the cart
   const inCart = cartItems.some((item) => item.id === product.id);
+  const [ref, isVisible] = useInView({ threshold: 0.1 });
+  // Cap delay at 400 ms so late cards don't wait too long
+  const delay = Math.min(index * 80, 400);
 
   return (
-    <article className="group relative w-full max-w-[34rem] mx-auto overflow-hidden rounded-2xl shadow-sm">
+    <article
+      ref={ref}
+      className={`group relative w-full max-w-[34rem] mx-auto overflow-hidden rounded-2xl shadow-sm ${
+        isVisible ? "card-enter" : "card-hidden"
+      }`}
+      style={{ "--card-delay": `${delay}ms` }}
+    >
 
       {/* ── Product image ─────────────────────────────────────────
           Dims on hover to reveal the overlay below.
@@ -29,7 +52,7 @@ function ProductCard({ product }) {
       <img
         src={product.image}
         alt={product.title}
-        className="h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50"
+        className="h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50"
       />
 
       {/* ── Hover overlay ─────────────────────────────────────────
@@ -85,41 +108,110 @@ function ProductCard({ product }) {
 
 /* ─────────────────────────────────────────────────────────────────────
    SHOP PAGE
-   Rendered at the "/shop" route. Fetches all available products and
-   lays them out in a two-column staggered (masonry-style) grid.
-
-   Layout logic:
-     Left column  — even-indexed products (0, 2, 4 …)
-     Right column — odd-indexed products  (1, 3, 5 …), offset down 14rem
+   Products are grouped by category. A sticky left sidebar (desktop)
+   and a horizontal underline bar (mobile) let users jump to any
+   category. Scrollspy highlights the active category as you scroll.
+   The first card of each category briefly pulses with a terracotta
+   ring to orient the user when that category becomes active.
 ───────────────────────────────────────────────────────────────────── */
 export default function Shop() {
-  const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [products, setProducts]           = useState([]);
+  const [isLoading, setIsLoading]         = useState(true);
+  const [error, setError]                 = useState("");
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [flashCat, setFlashCat]           = useState(null);
+  const sectionRefs    = useRef({});
+  const flashTimeout   = useRef(null);
 
-  // Fetch products on mount; filter to only available ones
+  /* ── Fetch products ────────────────────────────────────────────── */
   useEffect(() => {
     let active = true;
     fetchProducts()
-      .then((data) => {
-        if (active) setProducts(data.filter((p) => p.available));
-      })
-      .catch((err) => {
-        if (active) setError(err.message || "Failed to load products.");
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-    // Cleanup — prevents state updates if the component unmounts mid-fetch
+      .then((data) => { if (active) setProducts(data.filter((p) => p.available)); })
+      .catch((err)  => { if (active) setError(err.message || "Failed to load products."); })
+      .finally(()   => { if (active) setIsLoading(false); });
     return () => { active = false; };
   }, []);
 
-  return (
-    <main className="min-h-screen relative bg-[#F6F1EB] pt-28 pb-16">
+  /* ── Group + sort by category ──────────────────────────────────── */
+  const categories = useMemo(() => {
+    const groups = {};
+    products.forEach((p) => {
+      if (!groups[p.category]) groups[p.category] = [];
+      groups[p.category].push(p);
+    });
+    return Object.entries(groups).sort(
+      ([a], [b]) => (CATEGORY_META[a]?.order ?? 99) - (CATEGORY_META[b]?.order ?? 99)
+    );
+  }, [products]);
 
-      {/* ── Page header ───────────────────────────────────────────── */}
+  /* ── Default first category active on load ─────────────────────── */
+  useEffect(() => {
+    if (categories.length && activeCategory === null) {
+      setActiveCategory(categories[0][0]);
+    }
+  }, [categories, activeCategory]);
+
+  /* ── Trigger the beacon ring on the first card of a category ───── *
+     Sets flashCat → wrapper div gets .category-beacon class →
+     animation plays → class is removed after 2.4 s.
+     requestAnimationFrame between null and new value ensures the
+     class is removed+re-added even when re-triggering the same cat.
+  ─────────────────────────────────────────────────────────────────── */
+  const triggerFlash = (cat) => {
+    if (flashTimeout.current) clearTimeout(flashTimeout.current);
+    setFlashCat(null);
+    requestAnimationFrame(() => {
+      setFlashCat(cat);
+      flashTimeout.current = setTimeout(() => setFlashCat(null), 2400);
+    });
+  };
+
+  /* ── Scrollspy ─────────────────────────────────────────────────── *
+     Observes the first card wrapper of every category.
+     rootMargin "0px 0px -70% 0px" fires when the element enters
+     the top 30 % of the viewport — natural while scrolling down.
+  ─────────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!categories.length) return;
+    const observers = [];
+    categories.forEach(([cat]) => {
+      const el = sectionRefs.current[cat];
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveCategory(cat);
+            triggerFlash(cat);
+          }
+        },
+        { rootMargin: "0px 0px -70% 0px", threshold: 0 }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [categories]);
+
+  /* ── Sidebar click ─────────────────────────────────────────────── */
+  const handleCategoryClick = (cat) => {
+    setActiveCategory(cat);
+    sectionRefs.current[cat]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    triggerFlash(cat);
+  };
+
+  /* ── Roller: 0-based index of the active category ─────────────── */
+  const activeIndex = useMemo(
+    () => Math.max(0, categories.findIndex(([cat]) => cat === activeCategory)),
+    [categories, activeCategory]
+  );
+
+  return (
+    <main className="min-h-screen bg-[#F6F1EB] pt-28 pb-20">
+
+      {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
-        <div className="mb-10 border-b border-gray-200 pb-6">
+        <div className="mb-10 border-b border-[#E8DCD0] pb-6">
           <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Shop</p>
           <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">All Artwork</h1>
           <p className="mt-4 max-w-2xl text-base text-gray-600">
@@ -128,29 +220,182 @@ export default function Shop() {
         </div>
       </section>
 
-      {/* ── Product grid ──────────────────────────────────────────── */}
-      <section className="relative z-10 mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
-        {isLoading && <p className="text-center text-gray-500">Loading…</p>}
-        {error     && <p className="text-center text-red-600">{error}</p>}
-
-        <div className="flex flex-col gap-1 md:flex-row">
-
-          {/* Left column — even-indexed products */}
-          <div className="flex flex-1 flex-col gap-1">
-            {products.filter((_, i) => i % 2 === 0).map((product) => (
-              <ProductCard key={product.id} product={product} />
+      {/* ── Mobile: horizontal underline category bar ───────────── */}
+      {!isLoading && !error && (
+        <div className="lg:hidden sticky top-[72px] z-30 bg-[#F6F1EB]/95 backdrop-blur-sm border-b border-[#E8DCD0] px-6 py-3 mb-8">
+          <div className="flex gap-5 overflow-x-auto">
+            {categories.map(([cat]) => (
+              <button
+                key={cat}
+                onClick={() => handleCategoryClick(cat)}
+                className={`shrink-0 text-xs font-medium pb-1 transition-all duration-200 border-b-2 ${
+                  activeCategory === cat
+                    ? "text-[#2F2A26] border-[#D98C7A]"
+                    : "text-[#A89E94] border-transparent hover:text-[#6B6159]"
+                }`}
+              >
+                {CATEGORY_META[cat]?.label ?? cat}
+              </button>
             ))}
           </div>
-
-          {/* Right column — odd-indexed products, pushed down for stagger effect */}
-          <div className="flex flex-1 flex-col gap-1 md:mt-[14rem]">
-            {products.filter((_, i) => i % 2 === 1).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
         </div>
-      </section>
+      )}
+
+      {/* ── Body: sidebar + product grid ────────────────────────── */}
+      <div className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16 flex gap-10 xl:gap-14 items-start">
+
+        {/* ── Roller: drum-style category navigator ─────────────────
+            Sticky on the left, shows 3 slots at once:
+              top    — previous category (faded, smaller)
+              middle — active category   (full size, dark)
+              bottom — next category     (faded, smaller)
+            The inner strip slides vertically when activeCategory
+            changes. Clicking any visible item jumps to it.
+            Scrollspy updates activeCategory automatically.
+        ────────────────────────────────────────────────────────── */}
+        {!isLoading && !error && categories.length > 0 && (
+          <aside
+            className="hidden lg:flex w-56 shrink-0 sticky top-32 items-start"
+          >
+            {/* Roller wheel — clipped to exactly 3 slots.
+                marginTop pushes the wheel center to true viewport center:
+                50vh  (viewport mid)
+                - 8rem  (aside sticky offset)
+                - ITEM_H*1.5  (half the 3-slot window height)
+            */}
+            <div
+              className="relative w-full"
+              style={{ height: ITEM_H * 3, marginTop: `calc(50vh - 8rem - ${ITEM_H * 1.5}px)` }}
+            >
+
+              {/* ── Clipping window ── */}
+              <div className="absolute inset-0 overflow-hidden">
+                {/* ── Sliding strip — translates to keep active in center slot ── */}
+                <div
+                  style={{
+                    transform:  `translateY(${(1 - activeIndex) * ITEM_H}px)`,
+                    transition: "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  {categories.map(([cat], i) => {
+                    const dist     = Math.abs(i - activeIndex);
+                    const isActive = dist === 0;
+                    const isNear   = dist === 1;
+                    return (
+                      <div
+                        key={cat}
+                        onClick={() => handleCategoryClick(cat)}
+                        className="flex items-center cursor-pointer select-none pl-6"
+                        style={{ height: ITEM_H }}
+                      >
+                        <span
+                          style={{
+                            fontSize:      isActive ? "1.25rem" : "0.80rem",
+                            fontWeight:    isActive ? 600       : 500,
+                            color:         isActive ? "#2F2A26" : isNear ? "#6B6159" : "#A89E94",
+                            opacity:       isActive ? 1         : isNear ? 0.9  : 0.08,
+                            letterSpacing: isActive ? "0.01em"  : "0.04em",
+                            transition:    "all 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+                          }}
+                        >
+                          {CATEGORY_META[cat]?.label ?? cat}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── Center-slot frame: top + bottom rule lines ── */}
+              <div
+                className="absolute left-0 right-0 pointer-events-none"
+                style={{
+                  top:          ITEM_H,
+                  height:       ITEM_H,
+                  borderTop:    "1px solid #E8DCD0",
+                  borderBottom: "1px solid #E8DCD0",
+                }}
+              />
+              {/* Terracotta accent bar on the left of the center slot */}
+              <div
+                className="absolute left-0 pointer-events-none"
+                style={{
+                  top:          ITEM_H + 20,
+                  height:       ITEM_H - 40,
+                  width:        3,
+                  background:   "#D98C7A",
+                  borderRadius: "0 2px 2px 0",
+                }}
+              />
+              {/* ── Top fade mask — only covers the very edge so adjacent items stay readable ── */}
+              <div
+                className="absolute top-0 left-0 right-0 pointer-events-none z-10"
+                style={{
+                  height:     40,
+                  background: "linear-gradient(to bottom, #F6F1EB, transparent)",
+                }}
+              />
+              {/* ── Bottom fade mask ── */}
+              <div
+                className="absolute bottom-0 left-0 right-0 pointer-events-none z-10"
+                style={{
+                  height:     40,
+                  background: "linear-gradient(to top, #F6F1EB, transparent)",
+                }}
+              />
+            </div>
+          </aside>
+        )}
+
+        {/* ── Category groups ─────────────────────────────────────
+            Products remain in the same two-column masonry layout.
+            Each group's first card gets a wrapper ref (scrollspy)
+            and the .category-beacon class when its category is active.
+        ────────────────────────────────────────────────────────── */}
+        <div className="flex-1 space-y-12 md:space-y-20">
+          {isLoading && <p className="text-center text-gray-500 py-20">Loading…</p>}
+          {error     && <p className="text-center text-red-600 py-20">{error}</p>}
+
+          {categories.map(([cat, items]) => {
+            const leftItems  = items.filter((_, i) => i % 2 === 0);
+            const rightItems = items.filter((_, i) => i % 2 === 1);
+            return (
+              <div key={cat} className="flex flex-col gap-1 md:flex-row">
+
+                {/* Left column */}
+                <div className="flex flex-1 flex-col gap-1">
+                  {leftItems.map((product, colIdx) => {
+                    const isFirst    = colIdx === 0;
+                    const isFlashing = isFirst && flashCat === cat;
+                    return (
+                      <div
+                        key={product.id}
+                        ref={isFirst ? (el) => { sectionRefs.current[cat] = el; } : null}
+                        className={`w-full max-w-[34rem] mx-auto rounded-2xl scroll-mt-36 ${isFlashing ? "category-beacon" : ""}`}
+                      >
+                        <ProductCard product={product} index={colIdx * 2} />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right column — offset down when enough cards to stagger */}
+                {rightItems.length > 0 && (
+                  <div className={`flex flex-1 flex-col gap-1 ${items.length >= 3 ? "md:mt-[14rem]" : ""}`}>
+                    {rightItems.map((product, colIdx) => (
+                      <div key={product.id}>
+                        <ProductCard product={product} index={colIdx * 2 + 1} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
     </main>
   );
 }

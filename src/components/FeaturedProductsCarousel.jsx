@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
+import { useInView } from "../hooks/useInView";
 
 /* ─────────────────────────────────────────────────────────────────────
    HELPERS
@@ -143,14 +144,15 @@ export default function FeaturedProductsCarousel() {
           >
             {pages.map((page, idx) => (
               <div key={idx} className="w-full shrink-0 flex flex-col md:flex-row gap-6 md:gap-8">
-                {page.map((product) => (
-
+                {page.map((product, cardIdx) => {
+                  const delay = cardIdx * 120;
+                  return (
                   // ── Flip card ─────────────────────────────────────────
-                  // [perspective] on the article enables 3-D depth.
-                  // The inner div rotates 180° on hover.
-                  // Front face: image + title/price overlay
-                  // Back face:  product details + add/remove button
-                  <article key={product.id} className="group flex-1 [perspective:1000px]">
+                  <article
+                    key={product.id}
+                    className="group flex-1 [perspective:1000px] card-enter"
+                    style={{ "--card-delay": `${delay}ms` }}
+                  >
                     <div className="relative h-80 md:h-96 w-full transition-transform duration-700 ease-in-out [transition-delay:0ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-hover:[transition-delay:500ms]">
 
                       {/* ── Card front ──────────────────────────────── */}
@@ -216,8 +218,8 @@ export default function FeaturedProductsCarousel() {
                     </div>
                   </article>
                   // ── End flip card ─────────────────────────────────────
-
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
