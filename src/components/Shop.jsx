@@ -22,6 +22,17 @@ const CATEGORY_META = {
 const ITEM_H = 112;
 
 /* ─────────────────────────────────────────────────────────────────────
+   SKELETON CARD
+   Pulsing placeholder shown while products are fetching.
+   Matches the aspect-ratio and border-radius of a real ProductCard.
+───────────────────────────────────────────────────────────────────── */
+function SkeletonCard() {
+  return (
+    <div className="w-full max-w-[34rem] mx-auto rounded-2xl overflow-hidden animate-pulse bg-[#E8DCD0] h-[30rem] sm:h-[38rem] lg:h-[46rem]" />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    PRODUCT CARD
    Renders a single artwork card in the masonry-style grid.
    Hovering dims the image and reveals the product info + action buttons.
@@ -53,7 +64,7 @@ function ProductCard({ product, index = 0 }) {
       ─────────────────────────────────────────────────────────── */}
       {/* Persistent SOLD badge */}
       {isSold && (
-        <div className="absolute top-3 right-3 z-10 bg-[#2F2A26]/80 text-white text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full pointer-events-none">
+        <div className="absolute top-4 right-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full pointer-events-none shadow-md">
           Sold
         </div>
       )}
@@ -62,6 +73,7 @@ function ProductCard({ product, index = 0 }) {
         src={product.image}
         alt={product.title}
         className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 ${isSold ? "[filter:grayscale(0.4)]" : ""}`}
+        loading="lazy"
       />
 
       {/* ── Hover overlay ─────────────────────────────────────────
@@ -136,6 +148,7 @@ export default function Shop() {
   const [error, setError]                 = useState("");
   const [activeCategory, setActiveCategory] = useState(null);
   const [flashCat, setFlashCat]           = useState(null);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const sectionRefs    = useRef({});
   const flashTimeout   = useRef(null);
 
@@ -151,15 +164,16 @@ export default function Shop() {
 
   /* ── Group + sort by category ──────────────────────────────────── */
   const categories = useMemo(() => {
+    const filtered = showAvailableOnly ? products.filter((p) => p.available) : products;
     const groups = {};
-    products.forEach((p) => {
+    filtered.forEach((p) => {
       if (!groups[p.category]) groups[p.category] = [];
       groups[p.category].push(p);
     });
     return Object.entries(groups).sort(
       ([a], [b]) => (CATEGORY_META[a]?.order ?? 99) - (CATEGORY_META[b]?.order ?? 99)
     );
-  }, [products]);
+  }, [products, showAvailableOnly]);
 
   /* ── Default first category active on load ─────────────────────── */
   useEffect(() => {
@@ -228,8 +242,35 @@ export default function Shop() {
       {/* ── Page header ─────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
         <div className="mb-10 border-b border-[#E8DCD0] pb-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Shop</p>
-          <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">All Artwork</h1>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Shop</p>
+              <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">All Artwork</h1>
+            </div>
+            {/* ── Availability filter toggle ── */}
+            <div className="mt-auto pb-1 flex items-center gap-1.5 rounded-full border border-[#E8DCD0] bg-[#F6F1EB] p-1 shadow-sm">
+              <button
+                onClick={() => setShowAvailableOnly(false)}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  !showAvailableOnly
+                    ? "bg-[#D98C7A] text-white shadow"
+                    : "text-[#A89E94] hover:text-[#6B6159]"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setShowAvailableOnly(true)}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  showAvailableOnly
+                    ? "bg-[#D98C7A] text-white shadow"
+                    : "text-[#A89E94] hover:text-[#6B6159]"
+                }`}
+              >
+                Available Only
+              </button>
+            </div>
+          </div>
           <p className="mt-4 max-w-2xl text-base text-gray-600">
             Browse the full collection of original paintings and limited-edition prints.
           </p>
@@ -369,7 +410,18 @@ export default function Shop() {
             and the .category-beacon class when its category is active.
         ────────────────────────────────────────────────────────── */}
         <div className="flex-1 space-y-12 md:space-y-20">
-          {isLoading && <p className="text-center text-gray-500 py-20">Loading…</p>}
+          {isLoading && (
+            <div className="flex flex-col gap-1 md:flex-row">
+              <div className="flex flex-1 flex-col gap-1">
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+              <div className="flex flex-1 flex-col gap-1 md:mt-[14rem]">
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            </div>
+          )}
           {error     && <p className="text-center text-red-600 py-20">{error}</p>}
 
           {categories.map(([cat, items]) => {

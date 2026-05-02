@@ -91,7 +91,21 @@ export default function FeaturedProductsCarousel() {
   };
 
   /* ── Loading / error / empty states ── */
-  if (isLoading) return <div className="text-center py-10 text-gray-600">Loading featured products...</div>;
+  if (isLoading) return (
+    <div>
+      <div className="flex items-end justify-between mb-8">
+        <div>
+          <div className="h-3 w-28 rounded bg-[#E8DCD0] animate-pulse mb-2" />
+          <div className="h-8 w-52 rounded bg-[#E8DCD0] animate-pulse" />
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="flex-1 h-80 md:h-96 rounded-xl bg-[#E8DCD0] animate-pulse" />
+        ))}
+      </div>
+    </div>
+  );
   if (error)     return <div className="text-center py-10 text-red-600">{error}</div>;
   if (!products.length) return <div className="text-center py-10 text-gray-600">No featured products available right now.</div>;
 
@@ -158,7 +172,7 @@ export default function FeaturedProductsCarousel() {
                       {/* ── Card front ──────────────────────────────── */}
                       <div className="absolute inset-0 rounded-xl overflow-hidden [backface-visibility:hidden]">
                         {!product.available && (
-                          <div className="absolute top-3 right-3 z-10 bg-[#2F2A26]/80 text-white text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full">
+                          <div className="absolute top-4 right-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full shadow-md">
                             Sold
                           </div>
                         )}
@@ -166,6 +180,7 @@ export default function FeaturedProductsCarousel() {
                           src={product.image}
                           alt={product.title}
                           className={`w-full h-full object-cover ${!product.available ? "[filter:grayscale(0.4)]" : ""}`}
+                          loading="lazy"
                         />
                         {/* Title + price gradient overlay */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-5 py-4">

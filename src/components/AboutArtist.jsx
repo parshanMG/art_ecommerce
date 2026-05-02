@@ -42,6 +42,7 @@ export default function AboutArtist() {
                 src={ARTIST_IMAGE}
                 alt="A painting by Maryam Mohseni"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           </div>

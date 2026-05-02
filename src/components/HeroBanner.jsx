@@ -191,6 +191,8 @@ export default function HeroBanner() {
                 animation:       `${slide.anim} ${SLIDE_DURATION_S}s ease-in-out infinite`,
                 transformOrigin: "center center",
               }}
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchpriority={i === 0 ? "high" : "low"}
             />
           </div>
         ))}
