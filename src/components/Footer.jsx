@@ -19,12 +19,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
 
         {/* ── Column 1 · Brand ──────────────────────────────────────── */}
-        <div className="flex flex-col gap-4">
-          <Link to="/" className="inline-block">
-            <span className="island-moments text-4xl text-white leading-none">
-              Parshan
-            </span>
-          </Link>
+        <div className="flex flex-col gap-5">
           <p className="text-sm leading-relaxed text-[#A89E94]">
             Original watercolour paintings and fine-art prints — each piece
             hand-painted with water, light, and a quiet love for the
@@ -32,9 +27,7 @@ export default function Footer() {
           </p>
           {/* Decorative botanical divider */}
           <div className="flex items-center gap-2 mt-1 opacity-40 select-none">
-            <span className="text-xl">✦</span>
             <span className="h-px flex-1 bg-[#A89E94]" />
-            <span className="text-xl">✦</span>
           </div>
         </div>
 

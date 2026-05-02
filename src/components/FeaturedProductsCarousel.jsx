@@ -157,10 +157,15 @@ export default function FeaturedProductsCarousel() {
 
                       {/* ── Card front ──────────────────────────────── */}
                       <div className="absolute inset-0 rounded-xl overflow-hidden [backface-visibility:hidden]">
+                        {!product.available && (
+                          <div className="absolute top-3 right-3 z-10 bg-[#2F2A26]/80 text-white text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full">
+                            Sold
+                          </div>
+                        )}
                         <img
                           src={product.image}
                           alt={product.title}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${!product.available ? "[filter:grayscale(0.4)]" : ""}`}
                         />
                         {/* Title + price gradient overlay */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-5 py-4">
@@ -203,16 +208,18 @@ export default function FeaturedProductsCarousel() {
                         </div>
 
                         {/* Add / Remove basket toggle button */}
-                        <button
-                          onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
-                          className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition ${
-                            isInCart(product.id)
-                              ? "bg-[#D98C7A] hover:bg-[#bf7360] text-white"
-                              : "bg-[#D98C7A] hover:bg-[#bf7360] text-white"
-                          }`}
-                        >
-                          {isInCart(product.id) ? "Added ✓" : "Add to Basket +"}
-                        </button>
+                        {product.available ? (
+                          <button
+                            onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
+                            className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition bg-[#D98C7A] hover:bg-[#bf7360] text-white"
+                          >
+                            {isInCart(product.id) ? "Added ✓" : "Add to Basket +"}
+                          </button>
+                        ) : (
+                          <div className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center bg-[#E8DCD0] text-[#A89E94] cursor-default">
+                            Sold
+                          </div>
+                        )}
                       </div>
 
                     </div>

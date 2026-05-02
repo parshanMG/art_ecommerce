@@ -1,5 +1,6 @@
 import { Router } from "express";
 import pool from "../db/index.js";
+import { releaseExpiredReservations } from "../db/reservations.js";
 
 const router = Router();
 
@@ -7,6 +8,8 @@ const router = Router();
    Returns all products with their live availability status. */
 router.get("/", async (req, res, next) => {
   try {
+    await releaseExpiredReservations(pool);
+
     const { rows } = await pool.query(
       `SELECT id, title, price, category, medium, dimensions,
               year, available, featured, image, thumbnail, description

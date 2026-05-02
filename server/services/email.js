@@ -1,6 +1,11 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
-const ses = new SESClient({ region: process.env.AWS_REGION });
+// Lazily created so missing AWS_REGION doesn't crash the server on startup.
+let _ses = null;
+function getSES() {
+  if (!_ses) _ses = new SESClient({ region: process.env.AWS_REGION });
+  return _ses;
+}
 
 /* Escapes characters that have special meaning in HTML.
    Always call this on any user-supplied value before inserting
@@ -18,6 +23,7 @@ function escapeHtml(str) {
    All higher-level email functions (contact notification,
    order confirmation, etc.) call this. */
 export async function sendEmail({ to, subject, text, html }) {
+  const ses = getSES();
   const params = {
     Destination: {
       ToAddresses: [to],
@@ -38,7 +44,7 @@ export async function sendEmail({ to, subject, text, html }) {
         Data: subject,
       },
     },
-    Source: process.env.EMAIL_SOURCE,
+    Source: process.env.SES_FROM_ADDRESS,
   };
 
   const command = new SendEmailCommand(params);
@@ -48,7 +54,7 @@ export async function sendEmail({ to, subject, text, html }) {
 /* Sends the contact form message to the site owner */
 export async function sendContactNotification({ name, email, subject, message }) {
   // TODO: call sendEmail with owner address and formatted body
-  const ownerEmail = process.env.OWNER_EMAIL;
+  const ownerEmail = process.env.SES_OWNER_ADDRESS;
   const emailSubject = `New contact form submission: ${subject}`;
   const emailText = `Name: ${name}\nEmail: ${email}\nMessage: ${message}`;
   const emailHtml = `<p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Message:</strong> ${escapeHtml(message)}</p>`;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 import { useInView } from "../hooks/useInView";
@@ -31,7 +31,9 @@ const ITEM_H = 112;
 ───────────────────────────────────────────────────────────────────── */
 function ProductCard({ product, index = 0 }) {
   const { addToCart, removeFromCart, cartItems } = useCart();
+  const navigate = useNavigate();
   const inCart = cartItems.some((item) => item.id === product.id);
+  const isSold = !product.available;
   const [ref, isVisible] = useInView({ threshold: 0.1 });
   // Cap delay at 400 ms so late cards don't wait too long
   const delay = Math.min(index * 80, 400);
@@ -49,10 +51,17 @@ function ProductCard({ product, index = 0 }) {
           Dims on hover to reveal the overlay below.
           To change card height, adjust h-[46rem].
       ─────────────────────────────────────────────────────────── */}
+      {/* Persistent SOLD badge */}
+      {isSold && (
+        <div className="absolute top-3 right-3 z-10 bg-[#2F2A26]/80 text-white text-[10px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full pointer-events-none">
+          Sold
+        </div>
+      )}
+
       <img
         src={product.image}
         alt={product.title}
-        className="h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50"
+        className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 ${isSold ? "[filter:grayscale(0.4)]" : ""}`}
       />
 
       {/* ── Hover overlay ─────────────────────────────────────────
@@ -78,20 +87,27 @@ function ProductCard({ product, index = 0 }) {
               Enquire     — links to the enquiry form with product id
           ─────────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-2">
-            {/* TODO: wire Buy Now to the checkout / payment flow */}
-            <button className="rounded-lg bg-[#D98C7A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#bf7360]">
-              Buy Now
-            </button>
-            <button
-              onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                inCart
-                  ? "bg-[#6F8F8B] text-white hover:bg-[#5a7876]"
-                  : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-              }`}
-            >
-              {inCart ? "Added ✓" : "Add to Basket +"}
-            </button>
+            {isSold ? (
+              <span className="text-white/70 text-sm italic">This piece has been sold</span>
+            ) : (
+              <>
+                <button
+                  onClick={() => { addToCart(product); navigate("/checkout"); }}
+                  className="rounded-lg bg-[#D98C7A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#bf7360]">
+                  Buy Now
+                </button>
+                <button
+                  onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    inCart
+                      ? "bg-[#6F8F8B] text-white hover:bg-[#5a7876]"
+                      : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
+                  }`}
+                >
+                  {inCart ? "Added ✓" : "Add to Basket +"}
+                </button>
+              </>
+            )}
             <Link
               to={`/contact?product=${product.id}`}
               className="rounded-lg bg-[#D98C7A] px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-[#bf7360]"
@@ -127,7 +143,7 @@ export default function Shop() {
   useEffect(() => {
     let active = true;
     fetchProducts()
-      .then((data) => { if (active) setProducts(data.filter((p) => p.available)); })
+      .then((data) => { if (active) setProducts(data); })
       .catch((err)  => { if (active) setError(err.message || "Failed to load products."); })
       .finally(()   => { if (active) setIsLoading(false); });
     return () => { active = false; };

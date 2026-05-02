@@ -13,9 +13,10 @@ export async function fetchProducts() {
     throw new Error("Invalid products payload. Expected an array.");
   }
 
-  return products;
+  // PostgreSQL returns NUMERIC columns as strings — normalise to JS number
+  return products.map((p) => ({ ...p, price: parseFloat(p.price) }));
 }
 
 export function getFeaturedProducts(products) {
-  return products.filter((product) => product.available && product.featured);
+  return products.filter((product) => product.featured);
 }

@@ -64,7 +64,7 @@ function HomePage() {
       {/* ── Trust Bar ───────────────────────────────────────────────
           Three icon + label tiles on a black background.
           Edit the text or swap icons in /public/images/Icons/.
-      ─────────────────────────────────────────────────────────── */}
+      ─────────────────────────────────────────────────────────── 
       <section className="bg-[#2F2A26] pt-8 pb-5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-1 text-white">
@@ -89,7 +89,7 @@ function HomePage() {
           </div>
         </div>
       </section>
-
+        */}
     </main>
   );
 }

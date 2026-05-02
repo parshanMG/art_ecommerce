@@ -3,7 +3,6 @@
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
-import { initFlowbite } from "flowbite";
 import { useCart } from "../context/CartContext";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -64,10 +63,9 @@ const CnFlag = () => (
    Cart state comes from CartContext — no local cart state here.
 ───────────────────────────────────────────────────────────────────── */
 export default function Navbar() {
-  // Controls whether the cart dropdown is visible
   const [isCartOpen, setIsCartOpen] = useState(false);
-  // True once the user has scrolled past the hero banner
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { pathname } = useLocation();
   const isHome = pathname === "/";
@@ -79,10 +77,11 @@ export default function Navbar() {
   // Pull cart data and actions from the global CartContext
   const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
 
-  // Initialise Flowbite (needed for the hamburger collapse toggle)
+  // Close mobile menu on navigation
   useEffect(() => {
-    initFlowbite();
-  }, []);
+    setIsMobileMenuOpen(false);
+    setIsCartOpen(false);
+  }, [pathname]);
 
   /* ── Scroll listener ──────────────────────────────────────────────
      Switches the navbar from transparent to solid once the user
@@ -135,47 +134,27 @@ export default function Navbar() {
             Maryam Mohseni
           </span>
 
-        {/* ── Nav Links ────────────────────────────────────────────
-            Hidden on mobile (shown by hamburger toggle).
-            Add or remove <li> items here to change the nav menu.
-            NavLink automatically applies the active colour class.
-        ───────────────────────────────────────────────────────── */}
-        <div
-          className="items-center justify-center hidden w-full md:flex md:w-auto md:justify-self-center"
-          id="navbar-language"
-        >
-          <ul className="font-medium flex flex-col items-center gap-2 p-4 border rounded-lg md:flex-row md:gap-8 md:p-0 md:mt-0 md:border-0">
+        {/* ── Desktop Nav Links ─────────────────────────────────── */}
+        <div className="hidden md:flex md:w-auto md:justify-self-center">
+          <ul className="font-medium flex flex-row items-center gap-8">
             <li>
-              <NavLink to="/" end className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:p-0 transition-colors duration-300 ${
-                isActive
-                  ? "text-[#D98C7A]"
-                  : isTransparent
-                    ? "text-white/90 md:hover:text-[#D98C7A]"
-                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              <NavLink to="/" end className={({ isActive }) => `transition-colors duration-300 ${
+                isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
               }`}>Home</NavLink>
             </li>
             <li>
-              <NavLink to="/shop" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
-                isActive
-                  ? "text-[#D98C7A]"
-                  : isTransparent
-                    ? "text-white/90 md:hover:text-[#D98C7A]"
-                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              <NavLink to="/shop" className={({ isActive }) => `transition-colors duration-300 ${
+                isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
               }`}>Shop</NavLink>
             </li>
             <li>
-              {/* TODO: wire up to an /about route when that page is built */}
-              <a href="#" className={`block py-2 px-3 rounded md:hover:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
-                isTransparent ? "text-white/90 md:hover:text-[#D98C7A]" : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              <a href="#" className={`transition-colors duration-300 ${
+                isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
               }`}>About</a>
             </li>
             <li>
-              <NavLink to="/contact" className={({ isActive }) => `block py-2 px-3 rounded md:bg-transparent md:border-0 md:p-0 transition-colors duration-300 ${
-                isActive
-                  ? "text-[#D98C7A]"
-                  : isTransparent
-                    ? "text-white/90 md:hover:text-[#D98C7A]"
-                    : "text-[#2F2A26] md:hover:text-[#D98C7A]"
+              <NavLink to="/contact" className={({ isActive }) => `transition-colors duration-300 ${
+                isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
               }`}>Contact</NavLink>
             </li>
           </ul>
@@ -314,28 +293,78 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* ── Hamburger (mobile only) ───────────────────────────
-              Flowbite's data-collapse-toggle handles the show/hide
-              of the #navbar-language menu on small screens.
-          ───────────────────────────────────────────────────────── */}
+          {/* ── Hamburger / Close (mobile only) ───────────────── */}
           <button
-            data-collapse-toggle="navbar-language"
             type="button"
-            className={`inline-flex items-center p-2 w-10 h-10 justify-center text-sm rounded-lg md:hidden focus:outline-none focus:ring-2 focus:ring-[#D98C7A] transition-colors ${
-              isTransparent ? "text-white hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className={`inline-flex items-center p-2 w-10 h-10 justify-center rounded-lg md:hidden focus:outline-none transition-colors ${
+              isMobileMenuOpen
+                ? "text-[#D98C7A]"
+                : isTransparent
+                ? "text-white hover:text-[#D98C7A]"
+                : "text-[#2F2A26] hover:text-[#D98C7A]"
             }`}
-            aria-controls="navbar-language"
-            aria-expanded="false"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
           >
-            <span className="sr-only">Open main menu</span>
-            <svg className="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" strokeLinecap="round" strokeWidth="2" d="M5 7h14M5 12h14M5 17h14" />
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
 
         </div>
       </div>
       </nav>
+
+      {/* ── Mobile menu dropdown ──────────────────────────────────────
+          Rendered outside <nav> so it sits below it without affecting
+          the nav's fixed height. z-39 keeps it below the navbar (z-40).
+      ─────────────────────────────────────────────────────────────── */}
+      <div
+        className={`fixed top-[65px] inset-x-0 z-39 bg-[#F6F1EB] border-b border-[#E8DCD0] shadow-lg transition-all duration-200 md:hidden ${
+          isMobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
+        }`}
+      >
+        <ul className="flex flex-col font-medium px-6 py-4 gap-1">
+          <li>
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `block py-3 px-2 rounded-lg text-base transition-colors ${
+                  isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
+                }`
+              }
+            >Home</NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/shop"
+              className={({ isActive }) =>
+                `block py-3 px-2 rounded-lg text-base transition-colors ${
+                  isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
+                }`
+              }
+            >Shop</NavLink>
+          </li>
+          <li>
+            <a
+              href="#"
+              className="block py-3 px-2 rounded-lg text-base text-[#2F2A26] hover:text-[#D98C7A] transition-colors"
+            >About</a>
+          </li>
+          <li>
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `block py-3 px-2 rounded-lg text-base transition-colors ${
+                  isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
+                }`
+              }
+            >Contact</NavLink>
+          </li>
+        </ul>
+      </div>
 
       {/* ── Backdrop overlay ─────────────────────────────────────────
           Transparent full-screen button that closes the cart dropdown
@@ -347,6 +376,14 @@ export default function Navbar() {
           className="fixed inset-0 z-30 bg-transparent"
           aria-label="Close cart dropdown"
           onClick={handleCartToggle}
+        />
+      )}
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[38] bg-black/20"
+          aria-label="Close menu"
+          onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
     </>
