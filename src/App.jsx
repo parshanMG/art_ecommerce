@@ -2,6 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
@@ -20,6 +21,7 @@ import Footer from "./components/Footer";
 ───────────────────────────────────────────────────────────────────── */
 function PageTransition({ children }) {
   const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return (
     <div key={pathname} className="page-enter">
       {children}
