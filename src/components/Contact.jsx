@@ -3,6 +3,7 @@
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { apiUrl } from "../services/api";
 
 /* ─────────────────────────────────────────────────────────────────────
    STATIC DATA
@@ -83,6 +84,8 @@ export default function Contact() {
 
   const [openFaq, setOpenFaq] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -103,17 +106,41 @@ export default function Contact() {
   }, [location.search]);
 
   const handleChange = (e) => {
+    setSubmitError("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: connect to a real back-end / email service
-    setSubmitted(true);
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const response = await fetch(apiUrl("/api/contact"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || payload.message || "We couldn't send your message. Please try again.");
+      }
+
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(error.message || "We couldn't send your message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setSubmitted(false);
+    setSubmitError("");
     setForm({ name: "", email: "", subject: "", message: "" });
   };
 
@@ -167,6 +194,12 @@ export default function Contact() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+                {submitError && (
+                  <div className="rounded-lg border border-[#d8a29a] bg-[#f4ddd8] px-4 py-3 text-sm text-[#7a4036]">
+                    {submitError}
+                  </div>
+                )}
 
                 {/* Name */}
                 <div>
@@ -252,9 +285,10 @@ export default function Contact() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3 text-sm font-semibold text-white transition hover:bg-[#bf7360]"
                 >
-                  Send Message
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
               </form>
             )}
@@ -278,12 +312,11 @@ export default function Contact() {
                 <div>
                   <p className="text-xs uppercase tracking-widest text-gray-400">Instagram</p>
                   <a
-                    href="https://www.instagram.com"
+                    href="https://www.instagram.com/maryammohseni.art/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-medium text-[#2F2A26] hover:text-[#D98C7A] transition"
                   >
-                    {/* TODO: replace with real Instagram handle */}
                     @maryammohseni.art
                   </a>
                 </div>

@@ -1,11 +1,48 @@
 import { Router } from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import { validateRequest } from "../middleware/validateRequest.js";
 import pool from "../db/index.js";
 import { releaseExpiredReservations } from "../db/reservations.js";
 import stripe from "../services/stripe.js";
 
 const router = Router();
+
+router.get(
+  "/payment-status/:paymentIntentId",
+  [param("paymentIntentId").isString().trim().notEmpty()],
+  validateRequest,
+  async (req, res, next) => {
+    try {
+      const { paymentIntentId } = req.params;
+
+      const { rows } = await pool.query(
+        `SELECT id, status, created_at
+         FROM orders
+         WHERE stripe_payment_intent = $1
+         LIMIT 1`,
+        [paymentIntentId]
+      );
+
+      if (rows.length > 0) {
+        return res.json({
+          orderRecorded: true,
+          orderId: rows[0].id,
+          orderStatus: rows[0].status,
+          createdAt: rows[0].created_at,
+        });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      return res.status(202).json({
+        orderRecorded: false,
+        paymentStatus: paymentIntent.status,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /* POST /api/checkout/create-payment-intent
    1. Atomically checks all items are still available

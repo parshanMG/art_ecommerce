@@ -1,4 +1,24 @@
-const PRODUCTS_ENDPOINT = import.meta.env.VITE_PRODUCTS_ENDPOINT || "/data/products.json";
+import { apiUrl } from "./api";
+
+function resolveProductsEndpoint() {
+  const configuredEndpoint = import.meta.env.VITE_PRODUCTS_ENDPOINT?.trim();
+
+  if (!configuredEndpoint) {
+    return apiUrl("/api/products");
+  }
+
+  if (/^https?:\/\//i.test(configuredEndpoint)) {
+    return configuredEndpoint;
+  }
+
+  if (configuredEndpoint.startsWith("/api/")) {
+    return apiUrl(configuredEndpoint);
+  }
+
+  return configuredEndpoint;
+}
+
+const PRODUCTS_ENDPOINT = resolveProductsEndpoint();
 
 export async function fetchProducts() {
   const response = await fetch(PRODUCTS_ENDPOINT, { cache: "no-store" });

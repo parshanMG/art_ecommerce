@@ -36,6 +36,8 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 const requiredEnv = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "STRIPE_SECRET_KEY"];
 const missingEnv = requiredEnv.filter((name) => !process.env[name]?.trim());
+const requiredEmailEnv = ["AWS_REGION", "SES_FROM_ADDRESS", "SES_OWNER_ADDRESS"];
+const missingEmailEnv = requiredEmailEnv.filter((name) => !process.env[name]?.trim());
 
 if (missingEnv.length > 0) {
   console.error(
@@ -48,6 +50,19 @@ if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
   console.warn(
     `[boot ${BOOT_ID}] STRIPE_WEBHOOK_SECRET is not set. Stripe webhooks will fail verification until it is configured.`
   );
+}
+
+if (missingEmailEnv.length > 0) {
+  const emailConfigMessage =
+    `[boot ${BOOT_ID}] Missing SES environment variables: ${missingEmailEnv.join(", ")}. ` +
+    "Contact notifications and order confirmation emails will fail until they are configured.";
+
+  if (process.env.NODE_ENV === "production") {
+    console.error(emailConfigMessage);
+    process.exit(1);
+  }
+
+  console.warn(emailConfigMessage);
 }
 
 /* ── Security headers ───────────────────────────────────────────────── */
@@ -75,6 +90,7 @@ app.get("/api/health", (_req, res) => {
     config: {
       clientOrigin: CLIENT_ORIGIN,
       stripeWebhookSecretLoaded: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
+      sesConfigured: missingEmailEnv.length === 0,
       reservationTtlMinutes: Number(process.env.RESERVATION_TTL_MINUTES) || 30,
     },
   });

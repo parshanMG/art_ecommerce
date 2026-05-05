@@ -105,14 +105,20 @@ function ProductCard({ product, index = 0 }) {
               <>
                 <button
                   onClick={() => { addToCart(product); navigate("/checkout"); }}
-                  className="rounded-lg bg-[#D98C7A] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#bf7360]">
+                  disabled={inCart}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    inCart
+                      ? "bg-[#A89E94] text-white cursor-not-allowed opacity-60"
+                      : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
+                  }`}
+                >
                   Buy Now
                 </button>
                 <button
                   onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                     inCart
-                      ? "bg-[#6F8F8B] text-white hover:bg-[#5a7876]"
+                      ? "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
                       : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
                   }`}
                 >

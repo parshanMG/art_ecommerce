@@ -8,6 +8,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { useCart } from "../context/CartContext";
+import { apiUrl } from "../services/api";
 
 /* Stripe instance — created once outside the component so it is never
    recreated on re-renders. The publishable key is safe to expose here. */
@@ -38,6 +39,7 @@ export default function Checkout() {
   const [step, setStep]           = useState(1); // 1 | 2 | 3
   const [loading, setLoading]     = useState(false);
   const [apiError, setApiError]   = useState(null);
+  const [orderConfirmationState, setOrderConfirmationState] = useState("confirmed");
 
   /* Redirect to shop if someone lands here with an empty cart */
   if (!cartItems.length && step !== 3) {
@@ -65,9 +67,15 @@ export default function Checkout() {
         </div>
         <div>
           <h1 className="text-4xl font-semibold text-[#2F2A26] mb-2">Thank you!</h1>
-          <p className="text-[#6B6159]">
-            Your order is confirmed. A receipt has been sent to <strong>{form.email}</strong>.
-          </p>
+          {orderConfirmationState === "confirmed" ? (
+            <p className="text-[#6B6159]">
+              Your order is confirmed. A receipt has been sent to <strong>{form.email}</strong>.
+            </p>
+          ) : (
+            <p className="text-[#6B6159] max-w-xl">
+              Your payment was received and we are finalizing your order in the background. You will receive a confirmation email at <strong>{form.email}</strong> as soon as everything is recorded.
+            </p>
+          )}
         </div>
         <Link
           to="/"
@@ -94,7 +102,7 @@ export default function Checkout() {
     );
 
     try {
-      const res = await fetch("/api/checkout/create-payment-intent", {
+      const res = await fetch(apiUrl("/api/checkout/create-payment-intent"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -291,8 +299,10 @@ export default function Checkout() {
               >
                 <PaymentForm
                   buyerEmail={form.email}
-                  onSuccess={() => {
+                  clientSecret={clientSecret}
+                  onSuccess={({ orderRecorded }) => {
                     clearCart();
+                    setOrderConfirmationState(orderRecorded ? "confirmed" : "pending");
                     setStep(3);
                   }}
                 />
@@ -366,11 +376,30 @@ export default function Checkout() {
 }
 
 /* Stripe payment form (must live inside <Elements>) */
-function PaymentForm({ buyerEmail, onSuccess }) {
+function PaymentForm({ buyerEmail, clientSecret, onSuccess }) {
   const stripe   = useStripe();
   const elements = useElements();
   const [paying,  setPaying]  = useState(false);
   const [payError, setPayError] = useState(null);
+
+  const waitForOrderRecord = async (paymentIntentId) => {
+    const deadline = Date.now() + 15000;
+
+    while (Date.now() < deadline) {
+      const response = await fetch(apiUrl(`/api/checkout/payment-status/${paymentIntentId}`));
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload.orderRecorded) {
+          return { orderRecorded: true, orderStatus: payload.orderStatus };
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    return { orderRecorded: false };
+  };
 
   const handlePay = async (e) => {
     e.preventDefault();
@@ -394,7 +423,15 @@ function PaymentForm({ buyerEmail, onSuccess }) {
       setPayError(error.message);
       setPaying(false);
     } else {
-      onSuccess();
+      const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+
+      if (!paymentIntent?.id) {
+        onSuccess({ orderRecorded: false });
+        return;
+      }
+
+      const confirmation = await waitForOrderRecord(paymentIntent.id);
+      onSuccess(confirmation);
     }
   };
 

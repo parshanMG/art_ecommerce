@@ -71,9 +71,14 @@ router.post("/", async (req, res, next) => {
       );
 
       /* Send confirmation email — non-fatal if SES is unreachable */
-      sendOrderConfirmation({ buyerName, buyerEmail, items, total: total.toFixed(2) }).catch(
-        (err) => console.error("Order confirmation email failed:", err)
-      );
+      sendOrderConfirmation({
+        buyerName,
+        buyerEmail,
+        items,
+        total: total.toFixed(2),
+        shippingAddress,
+        orderReference: pi.id,
+      }).catch((err) => console.error("Order confirmation email failed:", err));
     } else if (event.type === "payment_intent.payment_failed" ||
                event.type === "payment_intent.canceled") {
       const pi = event.data.object;
