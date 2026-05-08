@@ -75,7 +75,7 @@ function FaqItem({ faq, isOpen, onToggle }) {
      • Two-column layout: contact form | other ways to connect
      • FAQ accordion section
 
-   When navigated to with ?product=<id> (e.g. from the Shop "Enquire"
+   When navigated to with ?product=<id> (e.g. from the Gallery "Enquire"
    button), the page scrolls to the form and pre-selects "Artwork Enquiry".
 ───────────────────────────────────────────────────────────────────── */
 export default function Contact() {
@@ -148,30 +148,29 @@ export default function Contact() {
     <main className="min-h-screen bg-[#F6F1EB] pt-28 pb-20">
 
       {/* ── Page header ───────────────────────────────────────────── */}
-      <section className="mx-auto w-full max-w-5xl px-6 md:px-10 xl:px-16">
-        <div className="mb-10 border-b border-gray-200 pb-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Contact</p>
-          <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">Contact the Artist</h1>
-          <p className="mt-4 max-w-2xl text-base text-gray-600">
+      <section className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
+        <div className="mb-10 border-b border-[#E8DCD0] pb-6">
+          <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>Contact</p>
+          <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>Contact the Artist</h1>
+          <p className="header-item mt-4 max-w-2xl text-base text-gray-600" style={{ "--header-delay": "320ms" }}>
             Have a question about a piece or a commission? I'd love to hear from you.
           </p>
         </div>
       </section>
 
-      {/* ── Two-column: Form + Other Ways ─────────────────────────── */}
+      {/* ── Form + Other Ways ─────────────────────────────────────── */}
       <section
         ref={formRef}
-        className="mx-auto w-full max-w-5xl px-6 md:px-10 xl:px-16"
+        className="header-item mx-auto w-full max-w-5xl px-6 md:px-10 xl:px-16"
+        style={{ "--header-delay": "480ms" }}
       >
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
 
           {/* ── Contact Form ────────────────────────────────────────
               Controlled form — all state lives in `form`.
               On submit, flips to a success screen.
-              TODO: replace handleSubmit body with a real API call.
           ─────────────────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-[#E8DCD0] bg-[#E8DCD0] p-8">
-            <h2 className="mb-6 text-xl font-semibold text-[#2F2A26]">Contact Form</h2>
+          <div className="rounded-2xl border border-[#E8DCD0] bg-[#E8DCD0] p-10">
+            <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">Contact Form</h2>
 
             {submitted ? (
               /* ── Success state ── */
@@ -193,7 +192,7 @@ export default function Contact() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
                 {submitError && (
                   <div className="rounded-lg border border-[#d8a29a] bg-[#f4ddd8] px-4 py-3 text-sm text-[#7a4036]">
@@ -201,45 +200,45 @@ export default function Contact() {
                   </div>
                 )}
 
-                {/* Name */}
-                <div>
-                  <label htmlFor="contact-name" className="mb-1 block text-sm font-medium text-gray-700">
-                    Name
-                  </label>
-                  <input
-                    id="contact-name"
-                    name="name"
-                    type="text"
-                    required
-                    autoComplete="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Your name"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="contact-email" className="mb-1 block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    id="contact-email"
-                    name="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="your@email.com"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
-                  />
+                {/* Name + Email row */}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="contact-name" className="mb-1.5 block text-base font-medium text-gray-700">
+                      Name
+                    </label>
+                    <input
+                      id="contact-name"
+                      name="name"
+                      type="text"
+                      required
+                      autoComplete="name"
+                      value={form.name}
+                      onChange={handleChange}
+                      placeholder="Your name"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-email" className="mb-1.5 block text-base font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      id="contact-email"
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="your@email.com"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
+                    />
+                  </div>
                 </div>
 
                 {/* Subject dropdown */}
                 <div>
-                  <label htmlFor="contact-subject" className="mb-1 block text-sm font-medium text-gray-700">
+                  <label htmlFor="contact-subject" className="mb-1.5 block text-base font-medium text-gray-700">
                     Subject
                   </label>
                   <div className="relative">
@@ -249,7 +248,7 @@ export default function Contact() {
                       required
                       value={form.subject}
                       onChange={handleChange}
-                      className="w-full appearance-none rounded-lg border border-gray-300 bg-white/70 px-4 py-2.5 pr-10 text-sm text-[#2F2A26] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A]"
+                      className="w-full appearance-none rounded-lg border border-gray-300 bg-white/70 px-4 py-3 pr-10 text-base text-[#2F2A26] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A]"
                     >
                       <option value="" disabled>Select a subject</option>
                       {SUBJECTS.map((s) => (
@@ -268,25 +267,25 @@ export default function Contact() {
 
                 {/* Message */}
                 <div>
-                  <label htmlFor="contact-message" className="mb-1 block text-sm font-medium text-gray-700">
+                  <label htmlFor="contact-message" className="mb-1.5 block text-base font-medium text-gray-700">
                     Message
                   </label>
                   <textarea
                     id="contact-message"
                     name="message"
                     required
-                    rows={5}
+                    rows={6}
                     value={form.message}
                     onChange={handleChange}
                     placeholder="Tell me about your enquiry…"
-                    className="w-full resize-none rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
+                    className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3 text-sm font-semibold text-white transition hover:bg-[#bf7360]"
+                  className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3.5 text-base font-semibold text-white transition hover:bg-[#bf7360]"
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
@@ -294,17 +293,13 @@ export default function Contact() {
             )}
           </div>
 
-          {/* ── Other Ways to Connect ────────────────────────────────
-              Add / remove <li> items here as needed.
-          ─────────────────────────────────────────────────────── */}
+          {/* ── Other Ways to Connect (commented out for now) ──────────
           <div className="rounded-2xl border border-[#E8DCD0] bg-[#E8DCD0] p-8">
             <h2 className="mb-6 text-xl font-semibold text-[#2F2A26]">Other Ways</h2>
 
             <ul className="flex flex-col gap-6">
-              {/* Instagram */}
               <li className="flex items-center gap-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2F2A26] text-white">
-                  {/* Instagram icon */}
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                     <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22H7.75A5.75 5.75 0 0 1 2 16.25V7.75A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5a4.25 4.25 0 0 0 4.25-4.25V7.75A4.25 4.25 0 0 0 16.25 3.5H7.75zm4.25 3a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm5.75-.75a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
                   </svg>
@@ -323,12 +318,12 @@ export default function Contact() {
               </li>
             </ul>
           </div>
+          ── end Other Ways ── */}
 
-        </div>
       </section>
 
       {/* ── FAQ Accordion ─────────────────────────────────────────── */}
-      <section className="mx-auto mt-16 w-full max-w-5xl px-6 md:px-10 xl:px-16">
+      <section className="header-item mx-auto mt-16 w-full max-w-5xl px-6 md:px-10 xl:px-16" style={{ "--header-delay": "560ms" }}>
         <div className="border-t border-gray-200 pt-10">
           <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">Frequently Asked</h2>
           <div className="flex flex-col gap-3">

@@ -141,14 +141,14 @@ function ProductCard({ product, index = 0 }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   SHOP PAGE
+   GALLERY PAGE
    Products are grouped by category. A sticky left sidebar (desktop)
    and a horizontal underline bar (mobile) let users jump to any
    category. Scrollspy highlights the active category as you scroll.
    The first card of each category briefly pulses with a terracotta
    ring to orient the user when that category becomes active.
 ───────────────────────────────────────────────────────────────────── */
-export default function Shop() {
+export default function Gallery() {
   const [products, setProducts]           = useState([]);
   const [isLoading, setIsLoading]         = useState(true);
   const [error, setError]                 = useState("");
@@ -250,11 +250,11 @@ export default function Shop() {
         <div className="mb-10 border-b border-[#E8DCD0] pb-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-[#D98C7A]">Shop</p>
-              <h1 className="mt-3 text-4xl font-semibold text-[#2F2A26]">All Artwork</h1>
+              <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>Gallery</p>
+              <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>All Artwork</h1>
             </div>
             {/* ── Availability filter toggle ── */}
-            <div className="mt-auto pb-1 flex items-center gap-1.5 rounded-full border border-[#E8DCD0] bg-[#F6F1EB] p-1 shadow-sm">
+            <div className="header-item mt-auto pb-1 flex items-center gap-1.5 rounded-full border border-[#E8DCD0] bg-[#F6F1EB] p-1 shadow-sm" style={{ "--header-delay": "320ms" }}>
               <button
                 onClick={() => setShowAvailableOnly(false)}
                 className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 ${
@@ -277,7 +277,7 @@ export default function Shop() {
               </button>
             </div>
           </div>
-          <p className="mt-4 max-w-2xl text-base text-gray-600">
+          <p className="header-item mt-4 max-w-2xl text-base text-gray-600" style={{ "--header-delay": "380ms" }}>
             Browse the full collection of original paintings and limited-edition prints.
           </p>
         </div>
@@ -285,7 +285,7 @@ export default function Shop() {
 
       {/* ── Mobile: horizontal underline category bar ───────────── */}
       {!isLoading && !error && (
-        <div className="lg:hidden sticky top-[72px] z-30 bg-[#F6F1EB]/95 backdrop-blur-sm border-b border-[#E8DCD0] px-6 py-3 mb-8">
+        <div className="header-item lg:hidden sticky top-[72px] z-30 bg-[#F6F1EB]/95 backdrop-blur-sm border-b border-[#E8DCD0] px-6 py-3 mb-8" style={{ "--header-delay": "480ms" }}>
           <div className="flex gap-5 overflow-x-auto">
             {categories.map(([cat]) => (
               <button
@@ -305,7 +305,7 @@ export default function Shop() {
       )}
 
       {/* ── Body: sidebar + product grid ────────────────────────── */}
-      <div className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16 flex gap-10 xl:gap-14 items-start">
+      <div className="header-item mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16 flex gap-10 xl:gap-14 items-start" style={{ "--header-delay": "520ms" }}>
 
         {/* ── Roller: drum-style category navigator ─────────────────
             Sticky on the left, shows 3 slots at once:

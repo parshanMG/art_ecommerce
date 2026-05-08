@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
-import Shop from "./components/Shop";
+import Gallery from "./components/Shop";
 import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
 import Checkout from "./components/Checkout";
@@ -98,7 +98,7 @@ function HomePage() {
 
 /* ─────────────────────────────────────────────────────────────────────
    APP (ROOT)
-   CartProvider wraps everything so Navbar, Shop, and the Carousel
+   CartProvider wraps everything so Navbar, Gallery, and the Carousel
    all share the same cart state. Add new routes inside <Routes>.
 ───────────────────────────────────────────────────────────────────── */
 export default function App() {
@@ -108,8 +108,8 @@ export default function App() {
       <Routes>
         {/* Home page */}
         <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-        {/* Full shop / all artwork */}
-        <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
+        {/* Full gallery / all artwork */}
+        <Route path="/shop" element={<PageTransition><Gallery /></PageTransition>} />
         {/* Contact / enquiry page */}
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         {/* Checkout */}

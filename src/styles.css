@@ -86,3 +86,29 @@ body {
   animation: category-beacon 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* ── Header stagger ─────────────────────────────────────────────────
+   Each element in a page header fades in and rises individually.
+   Apply the .header-item class and set --header-delay inline.
+
+   To tweak timing:
+     • Change the duration (0.55s) — longer = slower reveal
+     • Change --header-delay values in the JSX — controls stagger gap
+     • Change translateY(16px) — larger = more dramatic upward drift
+──────────────────────────────────────────────────────────────────── */
+@keyframes header-item {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-item {
+  opacity: 0;
+  animation: header-item 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--header-delay, 0ms);
+}
+

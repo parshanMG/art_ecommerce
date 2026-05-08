@@ -41,7 +41,7 @@ export default function Checkout() {
   const [apiError, setApiError]   = useState(null);
   const [orderConfirmationState, setOrderConfirmationState] = useState("confirmed");
 
-  /* Redirect to shop if someone lands here with an empty cart */
+  /* Redirect to gallery if someone lands here with an empty cart */
   if (!cartItems.length && step !== 3) {
     return (
       <div className="min-h-screen bg-[#F6F1EB] flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -50,7 +50,7 @@ export default function Checkout() {
           to="/shop"
           className="rounded-xl bg-[#D98C7A] px-6 py-3 text-sm text-white hover:bg-[#bf7360] transition"
         >
-          Browse the shop
+          Browse the gallery
         </Link>
       </div>
     );
@@ -161,7 +161,7 @@ export default function Checkout() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              Back to shop
+              Back to gallery
             </Link>
           ) : (
             <button

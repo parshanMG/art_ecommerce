@@ -39,7 +39,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-3 text-sm">
             {[
               { label: "Home",         to: "/"        },
-              { label: "Shop",         to: "/shop"    },
+              { label: "Gallery",      to: "/shop"    },
               { label: "Contact",      to: "/contact" },
             ].map(({ label, to }) => (
               <li key={to}>

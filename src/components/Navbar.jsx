@@ -56,7 +56,7 @@ const CnFlag = () => (
    NAVBAR COMPONENT
    Fixed to the top of every page (z-40). Contains:
      • Logo + site name (left)
-     • Nav links — Home, Shop, About, Contact (centre)
+     • Nav links — Home, Gallery, About, Contact (centre)
      • Cart icon with badge + cart dropdown (right)
      • Hamburger toggle for mobile (right)
 
@@ -145,7 +145,7 @@ export default function Navbar() {
             <li>
               <NavLink to="/shop" className={({ isActive }) => `transition-colors duration-300 ${
                 isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
-              }`}>Shop</NavLink>
+              }`}>Gallery</NavLink>
             </li>
             <li>
               <a href="#" className={`transition-colors duration-300 ${
@@ -345,7 +345,7 @@ export default function Navbar() {
                   isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
                 }`
               }
-            >Shop</NavLink>
+            >Gallery</NavLink>
           </li>
           <li>
             <a
