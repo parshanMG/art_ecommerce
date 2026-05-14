@@ -12,10 +12,20 @@ const router = Router();
 router.post(
   "/",
   [
-    body("name").isString().trim().notEmpty(),
-    body("email").isEmail().normalizeEmail(),
-    body("subject").isString().trim().notEmpty(),
-    body("message").isString().trim().notEmpty(),
+    body("name").isString().trim().notEmpty().isLength({ max: 100 })
+      .matches(/^[\p{L}\s'.\-]+$/u),
+    body("email").isEmail().normalizeEmail().isLength({ max: 254 }),
+    body("subject")
+      .isString()
+      .trim()
+      .isIn([
+        "Artwork Enquiry",
+        "Commission Request",
+        "Shipping Question",
+        "Return / Refund",
+        "General Enquiry",
+      ]),
+    body("message").isString().trim().notEmpty().isLength({ max: 5000 }),
   ],
   validateRequest,
   async (req, res, next) => {

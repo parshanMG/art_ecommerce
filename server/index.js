@@ -68,6 +68,21 @@ if (missingEmailEnv.length > 0) {
 /* ── Security headers ───────────────────────────────────────────────── */
 app.use(helmet());
 
+/* ── HTTPS enforcement (production only) ───────────────────────────────
+   AWS ALB / CloudFront terminates TLS and forwards the original scheme
+   in the X-Forwarded-Proto header. In production we trust that header
+   and redirect plain-HTTP requests before they go any further.
+   In development this middleware is skipped entirely.
+─────────────────────────────────────────────────────────────────────── */
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    if (req.headers["x-forwarded-proto"] === "http") {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
 /* ── JSON body parser — stores raw Buffer for webhook verification ── */
 app.use(
   express.json({

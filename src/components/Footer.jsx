@@ -107,7 +107,7 @@ export default function Footer() {
       {/* ── Bottom bar ────────────────────────────────────────────── */}
       <div className="border-t border-[#3E3832]">
         <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6B6159]">
-          <span>© {year} Parshan. All rights reserved.</span>
+          <span>© {year}. All rights reserved.</span>
           <span className="italic text-[#504843]">
             Painted with water &amp; light.
           </span>

@@ -14,6 +14,36 @@ import { apiUrl } from "../services/api";
    recreated on re-renders. The publishable key is safe to expose here. */
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+/* ── Supported shipping countries ───────────────────────────────────────────
+   code = ISO 3166-1 alpha-2 (must match POSTCODE_PATTERNS in checkout.js).
+   To add a new country: append one line here and add its pattern in
+   server/routes/checkout.js → POSTCODE_PATTERNS.
+────────────────────────────────────────────────────────────────── */
+const COUNTRIES = [
+  { code: "GB", label: "United Kingdom" },
+  { code: "IE", label: "Ireland" },
+  { code: "US", label: "United States" },
+  { code: "CA", label: "Canada" },
+  { code: "AU", label: "Australia" },
+  { code: "NZ", label: "New Zealand" },
+  { code: "FR", label: "France" },
+  { code: "DE", label: "Germany" },
+  { code: "NL", label: "Netherlands" },
+  { code: "BE", label: "Belgium" },
+  { code: "IT", label: "Italy" },
+  { code: "ES", label: "Spain" },
+  { code: "PT", label: "Portugal" },
+  { code: "SE", label: "Sweden" },
+  { code: "NO", label: "Norway" },
+  { code: "DK", label: "Denmark" },
+  { code: "FI", label: "Finland" },
+  { code: "AT", label: "Austria" },
+  { code: "CH", label: "Switzerland" },
+  { code: "SG", label: "Singapore" },
+  { code: "JP", label: "Japan" },
+  { code: "PL", label: "Poland" },
+];
+
 /* CHECKOUT PAGE
    Step 1 — contact + shipping details → POSTs to server to create a
              PaymentIntent and get back a clientSecret.
@@ -214,6 +244,7 @@ export default function Checkout() {
                       value={form.firstName}
                       onChange={handleChange}
                       autoComplete="given-name"
+                      maxLength={100}
                     />
                     <Field
                       label="Last name"
@@ -221,6 +252,7 @@ export default function Checkout() {
                       value={form.lastName}
                       onChange={handleChange}
                       autoComplete="family-name"
+                      maxLength={100}
                     />
                     <div className="sm:col-span-2">
                       <Field
@@ -230,6 +262,7 @@ export default function Checkout() {
                         value={form.email}
                         onChange={handleChange}
                         autoComplete="email"
+                        maxLength={254}
                       />
                     </div>
                   </div>
@@ -248,6 +281,7 @@ export default function Checkout() {
                         value={form.address}
                         onChange={handleChange}
                         autoComplete="street-address"
+                        maxLength={200}
                       />
                     </div>
                     <Field
@@ -256,6 +290,7 @@ export default function Checkout() {
                       value={form.city}
                       onChange={handleChange}
                       autoComplete="address-level2"
+                      maxLength={100}
                     />
                     <Field
                       label="Postcode"
@@ -263,14 +298,12 @@ export default function Checkout() {
                       value={form.postcode}
                       onChange={handleChange}
                       autoComplete="postal-code"
+                      maxLength={20}
                     />
                     <div className="sm:col-span-2">
-                      <Field
-                        label="Country"
-                        name="country"
+                      <CountrySelect
                         value={form.country}
                         onChange={handleChange}
-                        autoComplete="country-name"
                       />
                     </div>
                   </div>
@@ -461,8 +494,33 @@ function PaymentForm({ buyerEmail, clientSecret, onSuccess }) {
   );
 }
 
+/* Country dropdown — values are ISO 3166-1 alpha-2 codes to match backend */
+function CountrySelect({ value, onChange }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="country" className="text-xs font-medium text-[#6B6159]">
+        Country
+      </label>
+      <select
+        id="country"
+        name="country"
+        required
+        autoComplete="country"
+        value={value}
+        onChange={onChange}
+        className="rounded-lg border border-[#E8DCD0] bg-[#F6F1EB] px-4 py-2.5 text-sm text-[#2F2A26] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] appearance-none"
+      >
+        <option value="" disabled>Select a country</option>
+        {COUNTRIES.map(({ code, label }) => (
+          <option key={code} value={code}>{label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 /* Reusable labelled input */
-function Field({ label, name, type = "text", value, onChange, autoComplete }) {
+function Field({ label, name, type = "text", value, onChange, autoComplete, maxLength }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={name} className="text-xs font-medium text-[#6B6159]">
@@ -475,6 +533,7 @@ function Field({ label, name, type = "text", value, onChange, autoComplete }) {
         value={value}
         onChange={onChange}
         autoComplete={autoComplete}
+        maxLength={maxLength}
         required
         className="rounded-lg border border-[#E8DCD0] bg-[#F6F1EB] px-4 py-2.5 text-sm text-[#2F2A26] placeholder-[#C4B8AE] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A]"
       />

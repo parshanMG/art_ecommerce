@@ -5,11 +5,45 @@ import pool from "../db/index.js";
 import { releaseExpiredReservations } from "../db/reservations.js";
 import stripe from "../services/stripe.js";
 
+/* ── Country-aware postcode patterns ────────────────────────────────
+   Keyed by ISO 3166-1 alpha-2 country code.
+   To add a new country: append one line here and add it to the
+   COUNTRIES list in src/components/Checkout.jsx.
+   Countries absent from this map skip postcode format validation
+   so shipping to unlisted destinations still works.
+──────────────────────────────────────────────────────────────────── */
+const POSTCODE_PATTERNS = {
+  GB: /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i,          // e.g. SW1A 1AA
+  US: /^\d{5}(-\d{4})?$/,                                        // e.g. 90210 or 90210-1234
+  CA: /^[ABCEGHJKLMNPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\s?\d[ABCEGHJ-NPRSTV-Z]\d$/i, // e.g. M5V 2T6
+  AU: /^\d{4}$/,                                                  // e.g. 2000
+  IE: /^[A-Z]\d{2}\s?[A-Z0-9]{4}$/i,                           // Eircode e.g. D02 XY45
+  NZ: /^\d{4}$/,                                                  // e.g. 6011
+  DE: /^\d{5}$/,                                                  // e.g. 10115
+  FR: /^\d{5}$/,                                                  // e.g. 75001
+  NL: /^\d{4}\s?[A-Z]{2}$/i,                                    // e.g. 1234 AB
+  BE: /^\d{4}$/,                                                  // e.g. 1000
+  IT: /^\d{5}$/,                                                  // e.g. 00100
+  ES: /^\d{5}$/,                                                  // e.g. 28001
+  PT: /^\d{4}-\d{3}$/,                                           // e.g. 1000-001
+  SE: /^\d{3}\s?\d{2}$/,                                        // e.g. 111 22
+  NO: /^\d{4}$/,                                                  // e.g. 0150
+  DK: /^\d{4}$/,                                                  // e.g. 1050
+  FI: /^\d{5}$/,                                                  // e.g. 00100
+  AT: /^\d{4}$/,                                                  // e.g. 1010
+  CH: /^\d{4}$/,                                                  // e.g. 8001
+  SG: /^\d{6}$/,                                                  // e.g. 018956
+  JP: /^\d{3}-?\d{4}$/,                                          // e.g. 100-0001
+  PL: /^\d{2}-\d{3}$/,                                           // e.g. 00-001
+};
+
 const router = Router();
 
 router.get(
   "/payment-status/:paymentIntentId",
-  [param("paymentIntentId").isString().trim().notEmpty()],
+  [
+    param("paymentIntentId").isString().trim().notEmpty().isLength({ max: 100 }),
+  ],
   validateRequest,
   async (req, res, next) => {
     try {
@@ -51,14 +85,28 @@ router.get(
 router.post(
   "/create-payment-intent",
   [
-    body("items").isArray({ min: 1 }),
-    body("items.*.id").isString().notEmpty(),
-    body("buyerEmail").isEmail(),
-    body("buyerName").isString().trim().notEmpty(),
-    body("shippingAddress.line1").isString().trim().notEmpty(),
-    body("shippingAddress.city").isString().trim().notEmpty(),
-    body("shippingAddress.country").isString().trim().notEmpty(),
-    body("shippingAddress.postcode").isString().trim().notEmpty(),
+    body("items").isArray({ min: 1, max: 50 }),
+    body("items.*.id").isString().notEmpty().isLength({ max: 100 }),
+    body("buyerEmail").isEmail().normalizeEmail().isLength({ max: 254 }),
+    // Unicode letter class (\p{L}) covers international names (accented, CJK, etc.)
+    body("buyerName").isString().trim().notEmpty().isLength({ max: 200 })
+      .matches(/^[\p{L}\s'.\-]+$/u),
+    body("shippingAddress.line1").isString().trim().notEmpty().isLength({ max: 200 }),
+    body("shippingAddress.city").isString().trim().notEmpty().isLength({ max: 100 })
+      .matches(/^[\p{L}\s'.\-]+$/u),
+    // ISO 3166-1 alpha-2 code (e.g. "GB", "US") — enforced by the frontend dropdown
+    body("shippingAddress.country").isISO31661Alpha2(),
+    // Format checked against POSTCODE_PATTERNS[country]; unknown countries pass through
+    body("shippingAddress.postcode")
+      .isString().trim().notEmpty().isLength({ max: 20 })
+      .custom((postcode, { req }) => {
+        const country = req.body?.shippingAddress?.country?.toUpperCase();
+        const pattern = POSTCODE_PATTERNS[country];
+        if (pattern && !pattern.test(postcode.trim())) {
+          throw new Error(`Invalid postcode format for ${country}.`);
+        }
+        return true;
+      }),
   ],
   validateRequest,
   async (req, res, next) => {

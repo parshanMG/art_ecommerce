@@ -204,7 +204,7 @@ export default function Contact() {
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="contact-name" className="mb-1.5 block text-base font-medium text-gray-700">
-                      Name
+                      Full Name
                     </label>
                     <input
                       id="contact-name"
@@ -212,6 +212,7 @@ export default function Contact() {
                       type="text"
                       required
                       autoComplete="name"
+                      maxLength={100}
                       value={form.name}
                       onChange={handleChange}
                       placeholder="Your name"
@@ -228,6 +229,7 @@ export default function Contact() {
                       type="email"
                       required
                       autoComplete="email"
+                      maxLength={254}
                       value={form.email}
                       onChange={handleChange}
                       placeholder="your@email.com"
@@ -275,6 +277,7 @@ export default function Contact() {
                     name="message"
                     required
                     rows={6}
+                    maxLength={5000}
                     value={form.message}
                     onChange={handleChange}
                     placeholder="Tell me about your enquiry…"
