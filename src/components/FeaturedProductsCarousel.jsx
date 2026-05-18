@@ -18,6 +18,14 @@ const formatCurrency = (amount) =>
     currency: "USD",
   }).format(amount);
 
+// Returns how many cards to show per carousel slide based on viewport width.
+// Defined outside the component so the resize useEffect never holds a stale reference.
+const getPageSize = () => {
+  if (window.innerWidth < 640)  return 1;   // phone
+  if (window.innerWidth < 1024) return 2;   // tablet
+  return 3;                                  // desktop
+};
+
 /* ─────────────────────────────────────────────────────────────────────
    FEATURED PRODUCTS CAROUSEL
    Displays products that have featured:true in products.json.
@@ -66,18 +74,37 @@ export default function FeaturedProductsCarousel() {
     return () => { isMounted = false; };
   }, []);
 
+  /* ── Responsive page size ───────────────────────────────────────
+     < 640 px  (phone)   → 1 card per slide
+     640–1023px (tablet) → 2 cards per slide
+     ≥ 1024 px (desktop) → 3 cards per slide
+     Resets the current page index to 0 whenever the size changes
+     so we never land on a now-empty page.
+  ─────────────────────────────────────────────────────────────── */
+  const [pageSize, setPageSize] = useState(getPageSize);
+
+  useEffect(() => {
+    const onResize = () => {
+      const next = getPageSize();
+      setPageSize((prev) => {
+        if (prev !== next) setPageIndex(0);
+        return next;
+      });
+    };
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   /* ── Pagination ──────────────────────────────────────────────────
      Split the products array into chunks of pageSize.
-     To show more/fewer cards per slide, change pageSize.
   ─────────────────────────────────────────────────────────────── */
-  const pageSize = 3;
   const pages = useMemo(() => {
     const chunks = [];
     for (let i = 0; i < products.length; i += pageSize) {
       chunks.push(products.slice(i, i + pageSize));
     }
     return chunks;
-  }, [products]);
+  }, [products, pageSize]);
 
   // Advance to the next page (wraps around)
   const goNext = () => {
@@ -100,7 +127,7 @@ export default function FeaturedProductsCarousel() {
           <div className="h-8 w-52 rounded bg-[#E8DCD0] animate-pulse" />
         </div>
       </div>
-      <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+      <div className="flex flex-col sm:flex-row gap-6 md:gap-8">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex-1 h-80 md:h-96 rounded-xl bg-[#E8DCD0] animate-pulse" />
         ))}
@@ -114,19 +141,20 @@ export default function FeaturedProductsCarousel() {
     <div>
 
       {/* ── Section heading ─────────────────────────────────────────
-          Left: small uppercase label + main title.
-          Right: "VIEW ALL WORKS →" link — mirrors the reference layout.
+          Mobile:  label + heading stacked, "View all" link sits below
+                   in terracotta as a small text link.
+          Tablet+: original side-by-side layout with the link right-aligned.
       ─────────────────────────────────────────────────────────────── */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-0 mb-8">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-[#6F8F8B] mb-1">Featured Works</p>
-          <h2 className="text-3xl font-semibold text-[#2F2A26]">Recent Paintings</h2>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-[#2F2A26]">Recent Paintings</h2>
         </div>
         <Link
           to="/shop"
-          className="text-sm font-medium text-[#2F2A26] hover:text-[#D98C7A] transition tracking-wide flex items-center gap-1.5 pb-1"
+          className="self-start sm:self-auto text-xs sm:text-sm font-medium tracking-[0.15em] sm:tracking-wide uppercase sm:normal-case text-[#D98C7A] sm:text-[#2F2A26] hover:text-[#D98C7A] transition flex items-center gap-1.5 sm:pb-1"
         >
-          VIEW ALL WORKS <span aria-hidden="true">→</span>
+          View All Works <span aria-hidden="true">→</span>
         </Link>
       </div>
 
@@ -158,7 +186,7 @@ export default function FeaturedProductsCarousel() {
             style={{ transform: `translateX(-${pageIndex * 100}%)` }}
           >
             {pages.map((page, idx) => (
-              <div key={idx} className="w-full shrink-0 flex flex-col md:flex-row gap-6 md:gap-8">
+              <div key={idx} className="w-full shrink-0 flex flex-col sm:flex-row gap-6 md:gap-8">
                 {page.map((product, cardIdx) => {
                   const delay = cardIdx * 120;
                   return (

@@ -10,6 +10,7 @@ import Gallery from "./components/Shop";
 import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
 import Checkout from "./components/Checkout";
+import About from "./components/About";
 import { CartProvider } from "./context/CartContext";
 import Footer from "./components/Footer";
 import { COMMERCE_ENABLED } from "./config/features";
@@ -111,6 +112,8 @@ export default function App() {
         <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
         {/* Full gallery / all artwork */}
         <Route path="/shop" element={<PageTransition><Gallery /></PageTransition>} />
+        {/* About the artist */}
+        <Route path="/about" element={<PageTransition><About /></PageTransition>} />
         {/* Contact / enquiry page */}
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         {/* Checkout — only active when COMMERCE_ENABLED = true in src/config/features.js */}
