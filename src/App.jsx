@@ -12,6 +12,7 @@ import AboutArtist from "./components/AboutArtist";
 import Checkout from "./components/Checkout";
 import { CartProvider } from "./context/CartContext";
 import Footer from "./components/Footer";
+import { COMMERCE_ENABLED } from "./config/features";
 
 /* ─────────────────────────────────────────────────────────────────────
    PAGE TRANSITION
@@ -112,8 +113,8 @@ export default function App() {
         <Route path="/shop" element={<PageTransition><Gallery /></PageTransition>} />
         {/* Contact / enquiry page */}
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
-        {/* Checkout */}
-        <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
+        {/* Checkout — only active when COMMERCE_ENABLED = true in src/config/features.js */}
+        {COMMERCE_ENABLED && <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />}
       </Routes>
       <Footer />
     </CartProvider>

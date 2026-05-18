@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 import { useInView } from "../hooks/useInView";
+import { COMMERCE_ENABLED } from "../config/features";
 
 /* ─────────────────────────────────────────────────────────────────────
    CATEGORY METADATA
@@ -102,29 +103,31 @@ function ProductCard({ product, index = 0 }) {
             {isSold ? (
               <span className="text-white/70 text-sm italic">This piece has been sold</span>
             ) : (
-              <>
-                <button
-                  onClick={() => { addToCart(product); navigate("/checkout"); }}
-                  disabled={inCart}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    inCart
-                      ? "bg-[#A89E94] text-white cursor-not-allowed opacity-60"
-                      : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                  }`}
-                >
-                  Buy Now
-                </button>
-                <button
-                  onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    inCart
-                      ? "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                      : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                  }`}
-                >
-                  {inCart ? "Added ✓" : "Add to Basket +"}
-                </button>
-              </>
+              COMMERCE_ENABLED && (
+                <>
+                  <button
+                    onClick={() => { addToCart(product); navigate("/checkout"); }}
+                    disabled={inCart}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                      inCart
+                        ? "bg-[#A89E94] text-white cursor-not-allowed opacity-60"
+                        : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
+                    }`}
+                  >
+                    Buy Now
+                  </button>
+                  <button
+                    onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                      inCart
+                        ? "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
+                        : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
+                    }`}
+                  >
+                    {inCart ? "Added ✓" : "Add to Basket +"}
+                  </button>
+                </>
+              )
             )}
             <Link
               to={`/contact?product=${product.id}`}

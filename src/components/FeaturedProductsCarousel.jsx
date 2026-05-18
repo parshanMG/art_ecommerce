@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 import { useInView } from "../hooks/useInView";
+import { COMMERCE_ENABLED } from "../config/features";
 
 /* ─────────────────────────────────────────────────────────────────────
    HELPERS
@@ -223,7 +224,7 @@ export default function FeaturedProductsCarousel() {
                         </div>
 
                         {/* Add / Remove basket toggle button */}
-                        {product.available ? (
+                        {COMMERCE_ENABLED && (product.available ? (
                           <button
                             onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
                             className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition bg-[#D98C7A] hover:bg-[#bf7360] text-white"
@@ -234,7 +235,7 @@ export default function FeaturedProductsCarousel() {
                           <div className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center bg-[#E8DCD0] text-[#A89E94] cursor-default">
                             Sold
                           </div>
-                        )}
+                        ))}
                       </div>
 
                     </div>

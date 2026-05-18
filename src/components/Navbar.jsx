@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { COMMERCE_ENABLED } from "../config/features";
 
 /* ─────────────────────────────────────────────────────────────────────
    FLAG SVG COMPONENTS
@@ -164,14 +165,11 @@ export default function Navbar() {
         <div className="relative flex items-center justify-end gap-1 md:justify-self-end">
 
           {/* ── Cart Icon Button ───────────────────────────────────
-              Inline SVG cart icon — colour is driven purely by the
-              button's text colour class, so you can change it any
-              time by swapping the Tailwind colour values below:
-                Default:  text-[#2F2A26]   (dark brown)
-                Open:     text-[#D98C7A]   (terracotta accent)
-                Hover:    hover:text-[#D98C7A]
-              Badge background: bg-[#D98C7A] — change to any colour.
+              Hidden when COMMERCE_ENABLED is false (portfolio mode).
+              To re-enable, set COMMERCE_ENABLED = true in
+              src/config/features.js
           ───────────────────────────────────────────────────────── */}
+          {COMMERCE_ENABLED && <>
           <button
             type="button"
             onClick={handleCartToggle}
@@ -292,6 +290,7 @@ export default function Navbar() {
               </button>
             </div>
           </div>
+          </>}
 
           {/* ── Hamburger / Close (mobile only) ───────────────── */}
           <button
@@ -370,7 +369,7 @@ export default function Navbar() {
           Transparent full-screen button that closes the cart dropdown
           when the user clicks anywhere outside of it.
       ─────────────────────────────────────────────────────────────── */}
-      {isCartOpen && (
+      {COMMERCE_ENABLED && isCartOpen && (
         <button
           type="button"
           className="fixed inset-0 z-30 bg-transparent"
