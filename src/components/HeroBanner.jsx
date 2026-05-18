@@ -94,6 +94,11 @@ export default function HeroBanner() {
   const [textVisible, setTextVisible] = useState(false); // controls text slide-up
   const hoverTimer = useRef(null);
 
+  // On touch devices (hover: none) there is no hover event, so always show the overlay.
+  const [isTouchDevice] = useState(() => window.matchMedia("(hover: none)").matches);
+  // Derived: show the overlay if hovered on desktop OR always on touch
+  const showOverlay = isTouchDevice || textVisible;
+
   /* ── Advance to the next slide every SLIDE_DURATION_S seconds ── */
   useEffect(() => {
     const id = setInterval(
@@ -129,33 +134,61 @@ export default function HeroBanner() {
           To tweak pan:  change the translate / translateX values.
       ─────────────────────────────────────────────────────────── */}
       <style>{`
-        /* Slow pull-back — starts very close, gently reveals more */
+        /* ── Desktop (≥ 1024px) — cinematic zoom & pan ── */
         @keyframes kb-zoom-out {
           0%   { transform: scale(1.30) translate( 2%,  1%); }
           100% { transform: scale(1.10) translate( 0%,  0%); }
         }
-
-        /* Lateral drift — sweeps across the image at a fixed zoom */
         @keyframes kb-pan-lr {
           0%   { transform: scale(1.10) translateX(-4%); }
           100% { transform: scale(1.10) translateX( 4%); }
         }
-
-        /* Slow push-in — begins wide, creeps in toward the subject */
         @keyframes kb-pan-tb {
           0%   { transform: scale(1.30) translateY(-8%); }
           100% { transform: scale(1.30) translateY( 8%); }
         }
+
+        /* ── Tablet (640px – 1023px) — reduced zoom so more art shows ── */
+        @media (max-width: 1023px) {
+          @keyframes kb-zoom-out {
+            0%   { transform: scale(1.15) translate( 1%,  0.5%); }
+            100% { transform: scale(1.05) translate( 0%,  0%); }
+          }
+          @keyframes kb-pan-lr {
+            0%   { transform: scale(1.08) translateX(-2.5%); }
+            100% { transform: scale(1.08) translateX( 2.5%); }
+          }
+          @keyframes kb-pan-tb {
+            0%   { transform: scale(1.12) translateY(-4%); }
+            100% { transform: scale(1.12) translateY( 4%); }
+          }
+        }
+
+        /* ── Mobile (< 640px) — near-no zoom, full artwork visible ── */
+        @media (max-width: 639px) {
+          @keyframes kb-zoom-out {
+            0%   { transform: scale(1.06) translate( 0.5%,  0.5%); }
+            100% { transform: scale(1.00) translate( 0%,    0%); }
+          }
+          @keyframes kb-pan-lr {
+            0%   { transform: scale(1.04) translateX(-1.5%); }
+            100% { transform: scale(1.04) translateX( 1.5%); }
+          }
+          @keyframes kb-pan-tb {
+            0%   { transform: scale(1.06) translateY(-2%); }
+            100% { transform: scale(1.06) translateY( 2%); }
+          }
+        }
       `}</style>
 
       {/* ── Banner container ──────────────────────────────────────────
-          padding-top: 56.25% = 16 ∶ 9 aspect ratio trick.
+          h-screen fills the full viewport on every device — phones,
+          tablets (including iPad Pro portrait), and desktop monitors.
           overflow-hidden clips the edges of zoomed images.
           onMouseEnter/Leave drive the hover text overlay.
       ─────────────────────────────────────────────────────────── */}
       <div
-        className="relative w-full overflow-hidden"
-        style={{ paddingTop: "56.25%" }}
+        className="relative w-full overflow-hidden h-screen"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -206,7 +239,7 @@ export default function HeroBanner() {
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10 transition-opacity duration-700"
           style={{
-            opacity: textVisible ? 1 : 0,
+            opacity: showOverlay ? 1 : 0,
             zIndex:  10,
             pointerEvents: "none",
           }}
@@ -222,22 +255,22 @@ export default function HeroBanner() {
             To change position: swap items-end to items-center/items-start.
         ─────────────────────────────────────────────────────────── */}
         <div
-          className="absolute inset-0 flex items-end pb-16 px-10 md:px-20"
+          className="absolute inset-0 flex items-end pb-12 md:pb-16 px-6 md:px-10 lg:px-20"
           style={{
             zIndex:    11,
-            transform: textVisible ? "translateY(0)" : "translateY(6%)",
-            opacity:   textVisible ? 1 : 0,
+            transform: showOverlay ? "translateY(0)" : "translateY(6%)",
+            opacity:   showOverlay ? 1 : 0,
             transition: "transform 700ms cubic-bezier(0.22,1,0.36,1), opacity 700ms ease",
-            pointerEvents: textVisible ? "auto" : "none",
+            pointerEvents: showOverlay ? "auto" : "none",
           }}
         >
           <div>
             {/* Thin accent rule above the title */}
             <div
               className="mb-4 h-px w-10 bg-[#D98C7A]"
-              style={{ opacity: textVisible ? 1 : 0, transition: "opacity 500ms ease 200ms" }}
+              style={{ opacity: showOverlay ? 1 : 0, transition: "opacity 500ms ease 200ms" }}
             />
-            <h1 className="text-white text-4xl md:text-5xl font-light leading-tight whitespace-pre-line mb-4">
+            <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-light leading-tight whitespace-pre-line mb-4">
               {OVERLAY_TITLE}
             </h1>
             <p className="text-white/80 text-sm md:text-base max-w-xs leading-relaxed whitespace-pre-line mb-8">

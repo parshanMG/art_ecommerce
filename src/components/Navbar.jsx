@@ -82,7 +82,7 @@ export default function Navbar() {
           <img src="/images/MM.png" className="h-12" alt="Logo" />
         ───────────────────────────────────────────────────────── */}
 
-          <span className={`self-center text-4xl whitespace-nowrap island-moments font-medium transition-colors duration-300 ${
+          <span className={`self-center text-2xl sm:text-3xl lg:text-4xl whitespace-nowrap island-moments font-medium transition-colors duration-300 ${
             isTransparent ? "text-white" : "text-[#2F2A26]"
           }`}>
             Maryam Mohseni
