@@ -2,37 +2,118 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { apiUrl } from "../services/api";
+import { fetchProducts } from "../services/productsService";
+import { useLanguage } from "../i18n/LanguageContext";
+import { productText } from "../i18n/format";
 
 /* ─────────────────────────────────────────────────────────────────────
    STATIC DATA
+   Subject values are what the server validates and stores, so they stay
+   in English; only the labels are translated.
 ───────────────────────────────────────────────────────────────────── */
 const SUBJECTS = [
-  "Artwork Enquiry",
-  "Commission Request",
-  "Shipping Question",
-  "Return / Refund",
-  "General Enquiry",
+  { value: "Artwork Enquiry",    label: { en: "Artwork Enquiry",    fa: "استعلام اثر" } },
+  { value: "Commission Request", label: { en: "Commission Request", fa: "سفارش اثر" } },
+  { value: "Shipping Question",  label: { en: "Shipping Question",  fa: "پرسش درباره ارسال" } },
+  { value: "Return / Refund",    label: { en: "Return / Refund",    fa: "مرجوعی / بازپرداخت" } },
+  { value: "General Enquiry",    label: { en: "General Enquiry",    fa: "پرسش عمومی" } },
 ];
 
-const FAQS = [
-  {
-    question: "Do you ship internationally?",
-    answer:
-      "Yes, I ship worldwide. Shipping costs are calculated at checkout based on your location and the size of the piece.",
+/* Sales are arranged directly with the artist — nothing is paid on the
+   site — so the FAQ explains that rather than promising checkout,
+   shipping rates or a fixed returns policy. */
+const COPY = {
+  en: {
+    eyebrow: "Contact",
+    heading: "Contact the Artist",
+    intro: "Have a question about a piece, or want to buy or commission one? I'd love to hear from you.",
+    formHeading: "Contact Form",
+    successTitle: "Message sent!",
+    successText: "Thanks for reaching out. I'll be in touch soon.",
+    sendAnother: "Send another message",
+    enquiringAbout: "Enquiring about",
+    removeArtwork: (title) => `Remove ${title} from this enquiry`,
+    name: "Full Name",
+    namePlaceholder: "Your name",
+    email: "Email",
+    subject: "Subject",
+    selectSubject: "Select a subject",
+    message: "Message",
+    messagePlaceholder: "Tell me about your enquiry…",
+    consent: "I understand my message will be sent to the artist, who lives in Iran, so she can reply to me.",
+    send: "Send Message",
+    sending: "Sending...",
+    notice: "Your details are used only to reply to your message and are deleted after 24 months. See the",
+    privacy: "Privacy Policy",
+    sendError: "We couldn't send your message. Please try again.",
+    faqHeading: "Frequently Asked",
+    faqs: [
+      {
+        question: "How do I buy a painting?",
+        answer: "Press “Enquire” on any piece, or use the form above. The artist will reply personally to confirm it's available and agree payment and delivery with you. Nothing is paid through this website.",
+      },
+      {
+        question: "Where are the paintings, and do you ship?",
+        answer: "The paintings are currently in Iran. Delivery within Iran is arranged directly with you. For other countries, get in touch and we'll let you know what's possible.",
+      },
+      {
+        question: "What is your return policy?",
+        answer: "Returns and refunds are agreed with the artist when you arrange your purchase, so please ask before you buy.",
+      },
+      {
+        question: "Do you accept commissions?",
+        answer: "Yes! Please use the form above to describe your idea, and I'll get back to you within a few days.",
+      },
+    ],
   },
-  {
-    question: "What is your return policy?",
-    answer:
-      "Original works are final sale. Prints may be returned within 14 days if they arrive damaged — please photograph the damage and get in touch.",
+  fa: {
+    eyebrow: "تماس",
+    heading: "تماس با هنرمند",
+    intro: "پرسشی درباره یک اثر دارید یا می‌خواهید اثری بخرید یا سفارش دهید؟ خوشحال می‌شوم از شما بشنوم.",
+    formHeading: "فرم تماس",
+    successTitle: "پیام ارسال شد!",
+    successText: "از پیام شما ممنونم. به‌زودی پاسخ می‌دهم.",
+    sendAnother: "ارسال پیام دیگر",
+    enquiringAbout: "درباره این اثر",
+    removeArtwork: (title) => `حذف ${title} از این پیام`,
+    name: "نام و نام خانوادگی",
+    namePlaceholder: "نام شما",
+    email: "ایمیل",
+    subject: "موضوع",
+    selectSubject: "یک موضوع انتخاب کنید",
+    message: "پیام",
+    messagePlaceholder: "پیام خود را بنویسید…",
+    consent: "می‌دانم که پیام من برای هنرمند که در ایران زندگی می‌کند فرستاده می‌شود تا بتواند به من پاسخ دهد.",
+    send: "ارسال پیام",
+    sending: "در حال ارسال…",
+    notice: "اطلاعات شما فقط برای پاسخ به پیامتان استفاده می‌شود و پس از ۲۴ ماه حذف می‌شود. برای جزئیات",
+    privacy: "سیاست حفظ حریم خصوصی",
+    sendError: "ارسال پیام ممکن نشد. لطفاً اطلاعات فرم را بررسی کنید و دوباره تلاش کنید.",
+    faqHeading: "پرسش‌های متداول",
+    faqs: [
+      {
+        question: "چگونه می‌توانم یک نقاشی بخرم؟",
+        answer: "روی دکمه «استعلام» هر اثر بزنید یا از فرم بالا استفاده کنید. هنرمند شخصاً پاسخ می‌دهد، موجود بودن اثر را تأیید می‌کند و درباره پرداخت و ارسال با شما هماهنگ می‌کند. هیچ پرداختی از طریق این وب‌سایت انجام نمی‌شود.",
+      },
+      {
+        question: "نقاشی‌ها کجا هستند و آیا ارسال دارید؟",
+        answer: "نقاشی‌ها در حال حاضر در ایران هستند. ارسال در داخل ایران مستقیماً با شما هماهنگ می‌شود. برای کشورهای دیگر با ما تماس بگیرید تا امکان‌ها را بررسی کنیم.",
+      },
+      {
+        question: "شرایط مرجوعی چیست؟",
+        answer: "شرایط مرجوعی و بازپرداخت هنگام هماهنگی خرید با هنرمند توافق می‌شود؛ لطفاً پیش از خرید بپرسید.",
+      },
+      {
+        question: "آیا سفارش اثر می‌پذیرید؟",
+        answer: "بله! ایده خود را در فرم بالا شرح دهید تا ظرف چند روز پاسخ بدهم.",
+      },
+    ],
   },
-  {
-    question: "Do you accept commissions?",
-    answer:
-      "Yes! Please use the form above to describe your idea, and I'll get back to you within a few days.",
-  },
-];
+};
+
+const EMPTY_FORM = { name: "", email: "", subject: "", message: "", transferConsent: false };
 
 /* ─────────────────────────────────────────────────────────────────────
    FAQ ITEM
@@ -44,7 +125,7 @@ function FaqItem({ faq, isOpen, onToggle }) {
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-6 py-4 text-left text-sm font-medium text-[#2F2A26] hover:bg-[#E8DCD0] transition"
+        className="flex w-full items-center justify-between px-6 py-4 text-start text-sm font-medium text-[#2F2A26] hover:bg-[#E8DCD0] transition"
       >
         <span>{faq.question}</span>
         <svg
@@ -59,7 +140,7 @@ function FaqItem({ faq, isOpen, onToggle }) {
       </button>
       <div
         className={`overflow-hidden transition-all duration-200 ${
-          isOpen ? "max-h-40" : "max-h-0"
+          isOpen ? "max-h-60" : "max-h-0"
         }`}
       >
         <p className="px-6 pb-4 pt-1 text-sm text-gray-600">{faq.answer}</p>
@@ -72,42 +153,59 @@ function FaqItem({ faq, isOpen, onToggle }) {
    CONTACT PAGE
    Rendered at the "/contact" route. Contains:
      • Page header
-     • Two-column layout: contact form | other ways to connect
+     • Contact form
      • FAQ accordion section
 
    When navigated to with ?product=<id> (e.g. from the Gallery "Enquire"
-   button), the page scrolls to the form and pre-selects "Artwork Enquiry".
+   button), the page scrolls to the form, pre-selects "Artwork Enquiry",
+   shows which artwork the enquiry is about, and sends its id with the
+   message so the artist knows which piece was asked about.
+
+   Messages go to the artist in Iran. Iran has no UK data-protection
+   adequacy decision, so the visitor must tick the consent box (UK GDPR
+   Article 49(1)(a)); the server rejects the message without it.
 ───────────────────────────────────────────────────────────────────── */
 export default function Contact() {
   const location = useLocation();
   const formRef = useRef(null);
+  const { lang } = useLanguage();
+  const c = COPY[lang];
 
+  const [product, setProduct] = useState(null); // artwork being enquired about
   const [openFaq, setOpenFaq] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   /* ── Auto-scroll & pre-fill when arriving from an Enquire button ── */
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get("product")) {
-      setForm((prev) => ({ ...prev, subject: "Artwork Enquiry" }));
-      // Small delay so the page has time to paint before scrolling
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
+    const productId = new URLSearchParams(location.search).get("product");
+    if (!productId) return;
+
+    setForm((prev) => ({ ...prev, subject: "Artwork Enquiry" }));
+    // Small delay so the page has time to paint before scrolling
+    const scrollTimer = setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+
+    let active = true;
+    fetchProducts()
+      .then((products) => {
+        if (active) setProduct(products.find((p) => p.id === productId) ?? null);
+      })
+      .catch(() => {}); // the enquiry still works without the artwork preview
+
+    return () => {
+      active = false;
+      clearTimeout(scrollTimer);
+    };
   }, [location.search]);
 
   const handleChange = (e) => {
+    const { name, type, checked, value } = e.target;
     setSubmitError("");
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleSubmit = async (e) => {
@@ -122,17 +220,18 @@ export default function Contact() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, productId: product?.id, lang }),
       });
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || payload.message || "We couldn't send your message. Please try again.");
+        // Server messages are in English — Persian visitors get the Persian fallback
+        throw new Error((lang === "en" && (payload.error || payload.message)) || c.sendError);
       }
 
       setSubmitted(true);
     } catch (error) {
-      setSubmitError(error.message || "We couldn't send your message. Please try again.");
+      setSubmitError(error.message || c.sendError);
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +240,8 @@ export default function Contact() {
   const handleReset = () => {
     setSubmitted(false);
     setSubmitError("");
-    setForm({ name: "", email: "", subject: "", message: "" });
+    setProduct(null);
+    setForm(EMPTY_FORM);
   };
 
   return (
@@ -150,15 +250,15 @@ export default function Contact() {
       {/* ── Page header ───────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-7xl px-6 md:px-10 xl:px-16">
         <div className="mb-10 border-b border-[#E8DCD0] pb-6">
-          <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>Contact</p>
-          <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>Contact the Artist</h1>
+          <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>{c.eyebrow}</p>
+          <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>{c.heading}</h1>
           <p className="header-item mt-4 max-w-2xl text-base text-gray-600" style={{ "--header-delay": "320ms" }}>
-            Have a question about a piece or a commission? I'd love to hear from you.
+            {c.intro}
           </p>
         </div>
       </section>
 
-      {/* ── Form + Other Ways ─────────────────────────────────────── */}
+      {/* ── Form ──────────────────────────────────────────────────── */}
       <section
         ref={formRef}
         className="header-item mx-auto w-full max-w-5xl px-6 md:px-10 xl:px-16"
@@ -169,8 +269,8 @@ export default function Contact() {
               Controlled form — all state lives in `form`.
               On submit, flips to a success screen.
           ─────────────────────────────────────────────────────── */}
-          <div className="rounded-2xl border border-[#E8DCD0] bg-[#E8DCD0] p-10">
-            <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">Contact Form</h2>
+          <div className="rounded-2xl border border-[#E8DCD0] bg-[#E8DCD0] p-6 sm:p-10">
+            <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">{c.formHeading}</h2>
 
             {submitted ? (
               /* ── Success state ── */
@@ -180,15 +280,15 @@ export default function Contact() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-lg font-medium text-[#2F2A26]">Message sent!</p>
+                <p className="text-lg font-medium text-[#2F2A26]">{c.successTitle}</p>
                 <p className="max-w-xs text-sm text-gray-500">
-                  Thanks for reaching out. I'll be in touch soon.
+                  {c.successText}
                 </p>
                 <button
                   onClick={handleReset}
                   className="mt-2 text-sm text-gray-400 underline underline-offset-2 hover:text-[#2F2A26] transition"
                 >
-                  Send another message
+                  {c.sendAnother}
                 </button>
               </div>
             ) : (
@@ -200,11 +300,34 @@ export default function Contact() {
                   </div>
                 )}
 
+                {/* Artwork this enquiry is about (set by ?product=<id>) */}
+                {product && (
+                  <div className="flex items-center gap-4 rounded-xl border border-[#D9CBBE] bg-white/70 p-3">
+                    <img
+                      src={product.thumbnail || product.image}
+                      alt=""
+                      className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#6F8F8B]">{c.enquiringAbout}</p>
+                      <p className="truncate font-medium text-[#2F2A26]">{productText(product, "title", lang)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProduct(null)}
+                      aria-label={c.removeArtwork(productText(product, "title", lang))}
+                      className="shrink-0 px-2 text-gray-400 transition hover:text-[#2F2A26]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* Name + Email row */}
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="contact-name" className="mb-1.5 block text-base font-medium text-gray-700">
-                      Full Name
+                      {c.name}
                     </label>
                     <input
                       id="contact-name"
@@ -215,25 +338,26 @@ export default function Contact() {
                       maxLength={100}
                       value={form.name}
                       onChange={handleChange}
-                      placeholder="Your name"
+                      placeholder={c.namePlaceholder}
                       className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
                     />
                   </div>
                   <div>
                     <label htmlFor="contact-email" className="mb-1.5 block text-base font-medium text-gray-700">
-                      Email
+                      {c.email}
                     </label>
                     <input
                       id="contact-email"
                       name="email"
                       type="email"
+                      dir="ltr"
                       required
                       autoComplete="email"
                       maxLength={254}
                       value={form.email}
                       onChange={handleChange}
                       placeholder="your@email.com"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70 rtl:text-end"
                     />
                   </div>
                 </div>
@@ -241,7 +365,7 @@ export default function Contact() {
                 {/* Subject dropdown */}
                 <div>
                   <label htmlFor="contact-subject" className="mb-1.5 block text-base font-medium text-gray-700">
-                    Subject
+                    {c.subject}
                   </label>
                   <div className="relative">
                     <select
@@ -250,16 +374,16 @@ export default function Contact() {
                       required
                       value={form.subject}
                       onChange={handleChange}
-                      className="w-full appearance-none rounded-lg border border-gray-300 bg-white/70 px-4 py-3 pr-10 text-base text-[#2F2A26] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A]"
+                      className="w-full appearance-none rounded-lg border border-gray-300 bg-white/70 px-4 py-3 pe-10 text-base text-[#2F2A26] transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A]"
                     >
-                      <option value="" disabled>Select a subject</option>
+                      <option value="" disabled>{c.selectSubject}</option>
                       {SUBJECTS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s.value} value={s.value}>{s.label[lang]}</option>
                       ))}
                     </select>
                     {/* Custom chevron for the select */}
                     <svg
-                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                      className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -270,28 +394,49 @@ export default function Contact() {
                 {/* Message */}
                 <div>
                   <label htmlFor="contact-message" className="mb-1.5 block text-base font-medium text-gray-700">
-                    Message
+                    {c.message}
                   </label>
                   <textarea
                     id="contact-message"
                     name="message"
+                    dir="auto"
                     required
                     rows={6}
                     maxLength={5000}
                     value={form.message}
                     onChange={handleChange}
-                    placeholder="Tell me about your enquiry…"
+                    placeholder={c.messagePlaceholder}
                     className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 text-base text-[#2F2A26] placeholder-gray-400 transition focus:border-[#D98C7A] focus:ring-1 focus:ring-[#D98C7A] bg-white/70"
                   />
                 </div>
+
+                {/* Consent to send the message to Iran (UK GDPR Art. 49(1)(a)) */}
+                <label className="flex items-start gap-3 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="transferConsent"
+                    required
+                    checked={form.transferConsent}
+                    onChange={handleChange}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#D98C7A]"
+                  />
+                  <span>{c.consent}</span>
+                </label>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3.5 text-base font-semibold text-white transition hover:bg-[#bf7360]"
                 >
-                  {isSubmitting ? "Sending..." : "Send Message"}
+                  {isSubmitting ? c.sending : c.send}
                 </button>
+
+                {/* Privacy notice at the point of collection (UK GDPR) */}
+                <p className="text-center text-xs leading-relaxed text-gray-500">
+                  {c.notice}{" "}
+                  <Link to="/privacy" className="underline underline-offset-2 hover:text-[#2F2A26]">{c.privacy}</Link>
+                  {lang === "fa" ? " را ببینید." : "."}
+                </p>
               </form>
             )}
           </div>
@@ -328,9 +473,9 @@ export default function Contact() {
       {/* ── FAQ Accordion ─────────────────────────────────────────── */}
       <section className="header-item mx-auto mt-16 w-full max-w-5xl px-6 md:px-10 xl:px-16" style={{ "--header-delay": "560ms" }}>
         <div className="border-t border-gray-200 pt-10">
-          <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">Frequently Asked</h2>
+          <h2 className="mb-8 text-2xl font-semibold text-[#2F2A26]">{c.faqHeading}</h2>
           <div className="flex flex-col gap-3">
-            {FAQS.map((faq, i) => (
+            {c.faqs.map((faq, i) => (
               <FaqItem
                 key={i}
                 faq={faq}

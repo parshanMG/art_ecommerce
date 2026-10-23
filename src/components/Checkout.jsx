@@ -44,6 +44,29 @@ const COUNTRIES = [
   { code: "PL", label: "Poland" },
 ];
 
+/* The current checkout attempt's client secret is kept in sessionStorage
+   so that after "Back to details" or a page refresh the server can cancel
+   that attempt and free its items — otherwise the buyer's own hold would
+   block them until it expires. */
+const CLIENT_SECRET_KEY = "checkoutClientSecret";
+
+function readStoredClientSecret() {
+  try {
+    return sessionStorage.getItem(CLIENT_SECRET_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeClientSecret(secret) {
+  try {
+    if (secret) sessionStorage.setItem(CLIENT_SECRET_KEY, secret);
+    else sessionStorage.removeItem(CLIENT_SECRET_KEY);
+  } catch {
+    // Storage unavailable — a refresh then just waits out the old hold
+  }
+}
+
 /* CHECKOUT PAGE
    Step 1 — contact + shipping details → POSTs to server to create a
              PaymentIntent and get back a clientSecret.
@@ -101,6 +124,10 @@ export default function Checkout() {
             <p className="text-[#6B6159]">
               Your order is confirmed. A receipt has been sent to <strong>{form.email}</strong>.
             </p>
+          ) : orderConfirmationState === "review" ? (
+            <p className="text-[#6B6159] max-w-xl">
+              Your payment was received, but a piece in your order was sold moments before it went through. You'll be contacted at <strong>{form.email}</strong> about a refund for that piece.
+            </p>
           ) : (
             <p className="text-[#6B6159] max-w-xl">
               Your payment was received and we are finalizing your order in the background. You will receive a confirmation email at <strong>{form.email}</strong> as soon as everything is recorded.
@@ -145,6 +172,8 @@ export default function Checkout() {
             country:  form.country,
             postcode: form.postcode,
           },
+          // Lets the server cancel this buyer's previous attempt and free its items
+          replacesClientSecret: clientSecret ?? readStoredClientSecret() ?? undefined,
         }),
       });
 
@@ -156,6 +185,7 @@ export default function Checkout() {
       }
 
       setClientSecret(data.clientSecret);
+      storeClientSecret(data.clientSecret);
       setStep(2);
     } catch {
       setApiError("Could not reach the server. Check your connection and try again.");
@@ -322,6 +352,12 @@ export default function Checkout() {
                 >
                   {loading ? "Please wait" : "Continue to payment"}
                 </button>
+
+                {/* Privacy notice at the point of collection (UK/EU GDPR) */}
+                <p className="text-center text-xs text-[#A89E94]">
+                  Your details are used to process and deliver your order. See the{" "}
+                  <Link to="/privacy" className="underline underline-offset-2 hover:text-[#2F2A26]">Privacy Policy</Link>.
+                </p>
               </form>
             )}
 
@@ -333,9 +369,12 @@ export default function Checkout() {
                 <PaymentForm
                   buyerEmail={form.email}
                   clientSecret={clientSecret}
-                  onSuccess={({ orderRecorded }) => {
+                  onSuccess={({ orderRecorded, orderStatus }) => {
+                    storeClientSecret(null);
                     clearCart();
-                    setOrderConfirmationState(orderRecorded ? "confirmed" : "pending");
+                    setOrderConfirmationState(
+                      !orderRecorded ? "pending" : orderStatus === "needs_review" ? "review" : "confirmed"
+                    );
                     setStep(3);
                   }}
                 />
@@ -441,12 +480,34 @@ function PaymentForm({ buyerEmail, clientSecret, onSuccess }) {
     setPayError(null);
     setPaying(true);
 
+    /* Re-check the items are still held for this buyer (and restart the
+       reservation clock) right before the card is charged */
+    try {
+      const holdRes = await fetch(apiUrl("/api/checkout/hold"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientSecret }),
+      });
+
+      if (!holdRes.ok) {
+        const data = await holdRes.json().catch(() => ({}));
+        setPayError(data.error ?? "Something went wrong. Please try again.");
+        setPaying(false);
+        return;
+      }
+    } catch {
+      setPayError("Could not reach the server. Check your connection and try again.");
+      setPaying(false);
+      return;
+    }
+
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         receipt_email: buyerEmail,
-        /* return_url is required by Stripe for redirect-based payment methods.
-           For card payments the redirect never happens, but it must be present. */
+        /* The PaymentIntent only allows methods that don't redirect
+           (allow_redirects: "never" on the server), so this is never
+           used — Stripe still expects a value to be present. */
         return_url: window.location.origin,
       },
       redirect: "if_required",

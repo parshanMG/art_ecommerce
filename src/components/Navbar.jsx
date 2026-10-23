@@ -5,6 +5,27 @@ import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { COMMERCE_ENABLED } from "../config/features";
+import { useLanguage } from "../i18n/LanguageContext";
+
+/* ── Text in each language ───────────────────────────────────────── */
+const COPY = {
+  en: {
+    brand: "Maryam Mohseni",
+    home: "Home", gallery: "Gallery", about: "About", contact: "Contact",
+    openMenu: "Open menu", closeMenu: "Close menu",
+    openCart: "Open cart", closeCart: "Close cart", myCart: "My Cart",
+    emptyCart: "Your cart is empty.", qty: "Qty", subtotal: "Subtotal", checkout: "Checkout",
+    remove: (title) => `Remove ${title} from cart`,
+  },
+  fa: {
+    brand: "مریم محسنی",
+    home: "خانه", gallery: "گالری", about: "درباره", contact: "تماس",
+    openMenu: "باز کردن منو", closeMenu: "بستن منو",
+    openCart: "باز کردن سبد خرید", closeCart: "بستن سبد خرید", myCart: "سبد خرید",
+    emptyCart: "سبد خرید شما خالی است.", qty: "تعداد", subtotal: "جمع", checkout: "تسویه حساب",
+    remove: (title) => `حذف ${title} از سبد`,
+  },
+};
 
 /* ─────────────────────────────────────────────────────────────────────
    NAVBAR COMPONENT
@@ -27,6 +48,8 @@ export default function Navbar() {
   const isTransparent = isHome && !isScrolled;
 
   const navigate = useNavigate();
+  const { lang } = useLanguage();
+  const c = COPY[lang];
 
   // Pull cart data and actions from the global CartContext
   const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
@@ -85,7 +108,7 @@ export default function Navbar() {
           <span className={`self-center text-2xl sm:text-3xl lg:text-4xl whitespace-nowrap island-moments font-medium transition-colors duration-300 ${
             isTransparent ? "text-white" : "text-[#2F2A26]"
           }`}>
-            Maryam Mohseni
+            {c.brand}
           </span>
 
         {/* ── Desktop Nav Links ─────────────────────────────────── */}
@@ -94,22 +117,22 @@ export default function Navbar() {
             <li>
               <NavLink to="/" end className={({ isActive }) => `transition-colors duration-300 ${
                 isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
-              }`}>Home</NavLink>
+              }`}>{c.home}</NavLink>
             </li>
             <li>
               <NavLink to="/shop" className={({ isActive }) => `transition-colors duration-300 ${
                 isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
-              }`}>Gallery</NavLink>
+              }`}>{c.gallery}</NavLink>
             </li>
             <li>
               <NavLink to="/about" className={({ isActive }) => `transition-colors duration-300 ${
                 isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
-              }`}>About</NavLink>
+              }`}>{c.about}</NavLink>
             </li>
             <li>
               <NavLink to="/contact" className={({ isActive }) => `transition-colors duration-300 ${
                 isActive ? "text-[#D98C7A]" : isTransparent ? "text-white/90 hover:text-[#D98C7A]" : "text-[#2F2A26] hover:text-[#D98C7A]"
-              }`}>Contact</NavLink>
+              }`}>{c.contact}</NavLink>
             </li>
           </ul>
         </div>
@@ -148,7 +171,7 @@ export default function Navbar() {
                   ? "text-white hover:text-[#D98C7A]"
                   : "text-[#2F2A26] hover:text-[#D98C7A]"
             }`}
-            aria-label="Open cart"
+            aria-label={c.openCart}
             aria-expanded={isCartOpen}
             aria-controls="shopping-cart-dropdown"
           >
@@ -164,7 +187,7 @@ export default function Navbar() {
             </svg>
             {/* Badge — change bg-[#D98C7A] to any colour to retheme the counter dot */}
             {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D98C7A] text-[10px] font-semibold text-white">
+              <span className="absolute -top-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D98C7A] text-[10px] font-semibold text-white">
                 {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
@@ -180,19 +203,19 @@ export default function Navbar() {
           ───────────────────────────────────────────────────────── */}
           <div
             id="shopping-cart-dropdown"
-            className={`absolute right-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#E8DCD0] bg-[#F6F1EB] p-4 shadow-2xl transition-all duration-200 ${
+            className={`absolute end-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#E8DCD0] bg-[#F6F1EB] p-4 shadow-2xl transition-all duration-200 ${
               isCartOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
             }`}
             aria-hidden={!isCartOpen}
           >
             {/* Dropdown header */}
             <div className="flex items-center justify-between border-b pb-3">
-              <h2 className="text-lg font-semibold text-[#2F2A26]">My Cart</h2>
+              <h2 className="text-lg font-semibold text-[#2F2A26]">{c.myCart}</h2>
               <button
                 type="button"
                 onClick={handleCartToggle}
                 className="text-gray-500 hover:text-black"
-                aria-label="Close cart"
+                aria-label={c.closeCart}
               >
                 ✕
               </button>
@@ -204,7 +227,7 @@ export default function Navbar() {
             ─────────────────────────────────────────────────── */}
             <div className="max-h-96 overflow-y-auto py-4">
               {!cartItems.length ? (
-                <p className="text-sm text-gray-600">Your cart is empty.</p>
+                <p className="text-sm text-gray-600">{c.emptyCart}</p>
               ) : (
                 <ul className="space-y-3">
                   {cartItems.map((item) => (
@@ -220,7 +243,7 @@ export default function Navbar() {
                         <p className="truncate font-medium text-sm text-[#2F2A26]">{item.title}</p>
                         <p className="text-xs text-gray-500">{item.medium}</p>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Qty: {item.quantity}</span>
+                          <span className="text-gray-500">{c.qty}: {item.quantity}</span>
                           <span className="font-semibold text-[#2F2A26]">${Number(item.price || 0).toFixed(2)}</span>
                         </div>
                       </div>
@@ -229,7 +252,7 @@ export default function Navbar() {
                         type="button"
                         onClick={() => removeFromCart(item.id)}
                         className="shrink-0 self-start text-gray-400 hover:text-red-500 text-xs"
-                        aria-label={`Remove ${item.title} from cart`}
+                        aria-label={c.remove(item.title)}
                       >
                         ✕
                       </button>
@@ -245,7 +268,7 @@ export default function Navbar() {
             ─────────────────────────────────────────────────── */}
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Subtotal</span>
+                <span className="text-sm text-gray-600">{c.subtotal}</span>
                 <span className="font-semibold text-[#2F2A26]">${subtotal.toFixed(2)}</span>
               </div>
               <button
@@ -254,7 +277,7 @@ export default function Navbar() {
                 disabled={!cartItems.length}
                 className="w-full rounded-xl bg-[#D98C7A] py-3 text-white transition hover:bg-[#bf7360] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                Checkout
+                {c.checkout}
               </button>
             </div>
           </div>
@@ -271,7 +294,7 @@ export default function Navbar() {
                 ? "text-white hover:text-[#D98C7A]"
                 : "text-[#2F2A26] hover:text-[#D98C7A]"
             }`}
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={isMobileMenuOpen ? c.closeMenu : c.openMenu}
             aria-expanded={isMobileMenuOpen}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -302,7 +325,7 @@ export default function Navbar() {
                   isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
                 }`
               }
-            >Home</NavLink>
+            >{c.home}</NavLink>
           </li>
           <li>
             <NavLink
@@ -312,7 +335,7 @@ export default function Navbar() {
                   isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
                 }`
               }
-            >Gallery</NavLink>
+            >{c.gallery}</NavLink>
           </li>
           <li>
             <NavLink
@@ -322,7 +345,7 @@ export default function Navbar() {
                   isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
                 }`
               }
-            >About</NavLink>
+            >{c.about}</NavLink>
           </li>
           <li>
             <NavLink
@@ -332,7 +355,7 @@ export default function Navbar() {
                   isActive ? "text-[#D98C7A] font-semibold" : "text-[#2F2A26] hover:text-[#D98C7A]"
                 }`
               }
-            >Contact</NavLink>
+            >{c.contact}</NavLink>
           </li>
         </ul>
       </div>
@@ -345,7 +368,7 @@ export default function Navbar() {
         <button
           type="button"
           className="fixed inset-0 z-30 bg-transparent"
-          aria-label="Close cart dropdown"
+          aria-label={c.closeCart}
           onClick={handleCartToggle}
         />
       )}
@@ -353,7 +376,7 @@ export default function Navbar() {
         <button
           type="button"
           className="fixed inset-0 z-[38] bg-black/20"
-          aria-label="Close menu"
+          aria-label={c.closeMenu}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}

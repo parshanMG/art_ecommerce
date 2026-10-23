@@ -1,15 +1,24 @@
-@import url("https://fonts.googleapis.com/css2?family=Island+Moments&display=swap");
-
+/* Island Moments is self-hosted via @fontsource (imported in main.jsx)
+   rather than loaded from Google Fonts, so visitors' IP addresses aren't
+   sent to Google on every page view. */
 @import "tailwindcss";
 
 * {
-  outline: none;
   box-sizing: border-box;
 }
 
-*:focus,
-*:active {
-  outline: none !important;
+/* Focus ring for keyboard users only — :focus-visible doesn't match
+   mouse clicks or taps, so clicked buttons stay outline-free. */
+:focus-visible {
+  outline: 2px solid #D98C7A;
+  outline-offset: 2px;
+}
+
+/* Form fields draw their own focus:ring, so skip the outline there */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
 }
 
 a,
@@ -25,6 +34,22 @@ body {
 
 .island-moments {
   font-family: "Island Moments", cursive;
+}
+
+/* ── Persian ────────────────────────────────────────────────────────
+   Applied when the visitor picks Persian (LanguageContext sets
+   <html lang="fa" dir="rtl">).
+   • Vazirmatn has Persian glyphs; Island Moments doesn't.
+   • Letter-spacing breaks the joined Persian script, so every
+     tracking-* class is neutralised.
+──────────────────────────────────────────────────────────────────── */
+html[lang="fa"] body,
+html[lang="fa"] .island-moments {
+  font-family: "Vazirmatn", sans-serif;
+}
+
+html[lang="fa"] * {
+  letter-spacing: 0 !important;
 }
 
 /* ── Page transition ────────────────────────────────────────────────

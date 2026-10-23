@@ -12,7 +12,8 @@ router.get("/", async (req, res, next) => {
 
     const { rows } = await pool.query(
       `SELECT id, title, price, category, medium, dimensions,
-              year, available, featured, image, thumbnail, description
+              year, available, featured, image, thumbnail, description,
+              title_fa, medium_fa, dimensions_fa
        FROM products
        ORDER BY year DESC, title ASC`
     );

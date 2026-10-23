@@ -10,6 +10,8 @@ import checkoutRouter  from "./routes/checkout.js";
 import contactRouter   from "./routes/contact.js";
 import webhooksRouter  from "./routes/webhooks.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import pool from "./db/index.js";
+import { scheduleRetention } from "./db/retention.js";
 
 /* Rate limiters */
 const contactLimiter = rateLimit({
@@ -34,10 +36,12 @@ const STARTED_AT = new Date().toISOString();
 const PORT = Number(process.env.PORT) || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
-const requiredEnv = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "STRIPE_SECRET_KEY"];
+const requiredEnv = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD"];
 const missingEnv = requiredEnv.filter((name) => !process.env[name]?.trim());
 const requiredEmailEnv = ["AWS_REGION", "SES_FROM_ADDRESS", "SES_OWNER_ADDRESS"];
 const missingEmailEnv = requiredEmailEnv.filter((name) => !process.env[name]?.trim());
+// Without a Stripe key the server runs in portfolio mode: products + contact only
+const commerceConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
 
 if (missingEnv.length > 0) {
   console.error(
@@ -46,7 +50,11 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
+if (!commerceConfigured) {
+  console.warn(
+    `[boot ${BOOT_ID}] STRIPE_SECRET_KEY is not set. Checkout and Stripe webhooks are disabled (portfolio mode).`
+  );
+} else if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
   console.warn(
     `[boot ${BOOT_ID}] STRIPE_WEBHOOK_SECRET is not set. Stripe webhooks will fail verification until it is configured.`
   );
@@ -64,6 +72,20 @@ if (missingEmailEnv.length > 0) {
 
   console.warn(emailConfigMessage);
 }
+
+/* ── Proxy trust ────────────────────────────────────────────────────────
+   Behind the AWS load balancer every request arrives from the LB's own
+   IP. Trusting the proxy hops makes req.ip the real visitor IP, so the
+   rate limiters count each visitor separately instead of the whole site
+   sharing one limit.
+   TRUST_PROXY = number of proxies in front of the app
+   (ALB only → 1, CloudFront + ALB → 2). Defaults to 1 in production,
+   0 locally.
+─────────────────────────────────────────────────────────────────────── */
+app.set(
+  "trust proxy",
+  Number(process.env.TRUST_PROXY ?? (process.env.NODE_ENV === "production" ? 1 : 0)) || 0
+);
 
 /* ── Security headers ───────────────────────────────────────────────── */
 app.use(helmet());
@@ -104,6 +126,7 @@ app.get("/api/health", (_req, res) => {
     startedAt: STARTED_AT,
     config: {
       clientOrigin: CLIENT_ORIGIN,
+      commerceConfigured,
       stripeWebhookSecretLoaded: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
       sesConfigured: missingEmailEnv.length === 0,
       reservationTtlMinutes: Number(process.env.RESERVATION_TTL_MINUTES) || 30,
@@ -113,15 +136,23 @@ app.get("/api/health", (_req, res) => {
 
 /* ── Routes ─────────────────────────────────────────────────────────── */
 app.use("/api/products",         productsRouter);
-app.use("/api/checkout",         checkoutLimiter, checkoutRouter);
 app.use("/api/contact",          contactLimiter,  contactRouter);
-app.use("/api/webhooks/stripe",  webhooksRouter);
+
+if (commerceConfigured) {
+  app.use("/api/checkout",         checkoutLimiter, checkoutRouter);
+  app.use("/api/webhooks/stripe",  webhooksRouter);
+} else {
+  app.use(["/api/checkout", "/api/webhooks/stripe"], (_req, res) => {
+    res.status(503).json({ error: "Checkout is not available." });
+  });
+}
 
 /* ── Global error handler ───────────────────────────────────────────── */
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
   console.log(`[boot ${BOOT_ID}] Server running on port ${PORT} (pid ${process.pid})`);
+  scheduleRetention(pool);
 });
 
 server.on("error", (err) => {

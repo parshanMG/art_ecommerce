@@ -2,18 +2,21 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
 import Gallery from "./components/Shop";
 import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
-import Checkout from "./components/Checkout";
 import About from "./components/About";
+import Privacy from "./components/Privacy";
 import { CartProvider } from "./context/CartContext";
 import Footer from "./components/Footer";
 import { COMMERCE_ENABLED } from "./config/features";
+
+// Loaded on demand so Stripe.js is only downloaded when someone opens checkout
+const Checkout = lazy(() => import("./components/Checkout"));
 
 /* ─────────────────────────────────────────────────────────────────────
    PAGE TRANSITION
@@ -116,8 +119,10 @@ export default function App() {
         <Route path="/about" element={<PageTransition><About /></PageTransition>} />
         {/* Contact / enquiry page */}
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+        {/* Privacy policy — keep in sync with what the site collects */}
+        <Route path="/privacy" element={<PageTransition><Privacy /></PageTransition>} />
         {/* Checkout — only active when COMMERCE_ENABLED = true in src/config/features.js */}
-        {COMMERCE_ENABLED && <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />}
+        {COMMERCE_ENABLED && <Route path="/checkout" element={<PageTransition><Suspense fallback={null}><Checkout /></Suspense></PageTransition>} />}
       </Routes>
       <Footer />
     </CartProvider>

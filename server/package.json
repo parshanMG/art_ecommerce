@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seed.js"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.0.0",

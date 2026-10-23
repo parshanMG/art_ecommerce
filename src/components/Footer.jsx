@@ -5,12 +5,45 @@
      • Brand — logo name + tagline
      • Navigate — internal page links
      • Connect — contact + policy quick-links
-   A thin divider separates the columns from the copyright line.
+   A thin divider separates the columns from the bottom bar, which holds
+   the copyright line, privacy link and the language flags.
 ───────────────────────────────────────────────────────────────────── */
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
+import LanguageSwitcher from "./LanguageSwitcher";
+
+/* ── Text in each language ───────────────────────────────────────── */
+const COPY = {
+  en: {
+    tagline: "Original watercolour paintings and fine-art prints — each piece hand-painted with water, light, and a quiet love for the fleeting moments that matter most.",
+    navigate: "Navigate",
+    connect: "Connect",
+    nav: { home: "Home", gallery: "Gallery", about: "About", contact: "Contact" },
+    getInTouch: "Get in touch",
+    commission: "Commission a piece",
+    shipping: "Shipping & returns",
+    rights: "All rights reserved.",
+    privacy: "Privacy Policy",
+    motto: "Painted with water & light.",
+  },
+  fa: {
+    tagline: "نقاشی‌های اصل آبرنگ و چاپ‌های هنری — هر اثر با دست، با آب و نور و عشقی آرام به لحظه‌های گذرا و ارزشمند نقاشی شده است.",
+    navigate: "صفحه‌ها",
+    connect: "ارتباط",
+    nav: { home: "خانه", gallery: "گالری", about: "درباره", contact: "تماس" },
+    getInTouch: "تماس با ما",
+    commission: "سفارش اثر",
+    shipping: "ارسال و مرجوعی",
+    rights: "تمامی حقوق محفوظ است.",
+    privacy: "حریم خصوصی",
+    motto: "نقاشی‌شده با آب و نور.",
+  },
+};
 
 export default function Footer() {
+  const { lang } = useLanguage();
+  const c = COPY[lang];
   const year = new Date().getFullYear();
   const [navOpen, setNavOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -24,9 +57,7 @@ export default function Footer() {
         {/* ── Column 1 · Brand ──────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
           <p className="text-sm leading-relaxed text-[#A89E94]">
-            Original watercolour paintings and fine-art prints — each piece
-            hand-painted with water, light, and a quiet love for the
-            fleeting moments that matter most.
+            {c.tagline}
           </p>
           {/* Decorative botanical divider */}
           <div className="flex items-center gap-2 mt-1 opacity-40 select-none">
@@ -37,12 +68,12 @@ export default function Footer() {
         {/* ── Column 2 · Navigate ───────────────────────────────────── */}
         <div>
           <button
-            className="w-full flex items-center justify-between text-left"
+            className="w-full flex items-center justify-between text-start"
             onClick={() => setNavOpen((o) => !o)}
             aria-expanded={navOpen}
           >
             <h3 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#A89E94]">
-              Navigate
+              {c.navigate}
             </h3>
             <svg
               className={`md:hidden w-4 h-4 text-[#A89E94] transition-transform duration-200${navOpen ? " rotate-180" : ""}`}
@@ -56,10 +87,10 @@ export default function Footer() {
           </button>
           <ul className={`flex-col gap-3 text-sm mt-4 ${navOpen ? "flex" : "hidden"} md:flex`}>
             {[
-              { label: "Home",    to: "/"        },
-              { label: "Gallery", to: "/shop"    },
-              { label: "About",   to: "/about"   },
-              { label: "Contact", to: "/contact" },
+              { label: c.nav.home,    to: "/"        },
+              { label: c.nav.gallery, to: "/shop"    },
+              { label: c.nav.about,   to: "/about"   },
+              { label: c.nav.contact, to: "/contact" },
             ].map(({ label, to }) => (
               <li key={to}>
                 <Link
@@ -76,12 +107,12 @@ export default function Footer() {
         {/* ── Column 3 · Connect ────────────────────────────────────── */}
         <div>
           <button
-            className="w-full flex items-center justify-between text-left"
+            className="w-full flex items-center justify-between text-start"
             onClick={() => setConnectOpen((o) => !o)}
             aria-expanded={connectOpen}
           >
             <h3 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#A89E94]">
-              Connect
+              {c.connect}
             </h3>
             <svg
               className={`md:hidden w-4 h-4 text-[#A89E94] transition-transform duration-200${connectOpen ? " rotate-180" : ""}`}
@@ -100,7 +131,7 @@ export default function Footer() {
                 to="/contact"
                 className="hover:text-white transition-colors duration-200"
               >
-                Get in touch
+                {c.getInTouch}
               </Link>
             </li>
             <li>
@@ -108,7 +139,7 @@ export default function Footer() {
                 to="/contact"
                 className="hover:text-white transition-colors duration-200"
               >
-                Commission a piece
+                {c.commission}
               </Link>
             </li>
             <li>
@@ -116,7 +147,7 @@ export default function Footer() {
                 to="/contact"
                 className="hover:text-white transition-colors duration-200"
               >
-                Shipping &amp; returns
+                {c.shipping}
               </Link>
             </li>
           </ul>
@@ -140,13 +171,22 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* ── Bottom bar ────────────────────────────────────────────── */}
+      {/* ── Bottom bar ────────────────────────────────────────────────
+          Copyright + privacy link, motto, and the language flags.
+      ─────────────────────────────────────────────────────────────── */}
       <div className="border-t border-[#3E3832]">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#6B6159]">
-          <span>© {year}. All rights reserved.</span>
-          <span className="italic text-[#504843]">
-            Painted with water &amp; light.
+        <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#6B6159]">
+          <span>
+            © {year}. {c.rights}
+            <span className="mx-2" aria-hidden="true">·</span>
+            <Link to="/privacy" className="hover:text-white transition-colors duration-200">
+              {c.privacy}
+            </Link>
           </span>
+          <span className="italic text-[#504843]">
+            {c.motto}
+          </span>
+          <LanguageSwitcher />
         </div>
       </div>
 
