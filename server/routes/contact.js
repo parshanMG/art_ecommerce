@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { validateRequest } from "../middleware/validateRequest.js";
+import { validateRequest, NAME_PATTERN } from "../middleware/validateRequest.js";
 import { sendContactNotification, sendContactConfirmation } from "../services/email.js";
 import pool from "../db/index.js";
 
@@ -8,13 +8,24 @@ const router = Router();
 
 /* POST /api/contact
    Sends the user's message to the owner via SES and
-   replies to the user with a confirmation email. */
+   replies to the user with a confirmation email.
+   productId (optional) links the enquiry to an artwork — set when the
+   visitor arrives from an "Enquire" button.
+   lang ("en" | "fa") picks the language of the confirmation email.
+   transferConsent must be true: messages go to the artist in Iran, which
+   has no UK adequacy decision, so the transfer relies on the visitor's
+   explicit consent (UK GDPR Article 49(1)(a)). */
 router.post(
   "/",
   [
-    body("name").isString().trim().notEmpty().isLength({ max: 100 })
-      .matches(/^[\p{L}\s'.\-]+$/u),
-    body("email").isEmail().normalizeEmail().isLength({ max: 254 }),
+    body("name")
+      .isString().trim().notEmpty().withMessage("Please enter your name.")
+      .isLength({ max: 100 }).withMessage("Name must be 100 characters or fewer.")
+      .matches(NAME_PATTERN).withMessage("Name can only contain letters, spaces, apostrophes, hyphens and full stops."),
+    body("email")
+      .isEmail().withMessage("Please enter a valid email address.")
+      .normalizeEmail()
+      .isLength({ max: 254 }).withMessage("Email must be 254 characters or fewer."),
     body("subject")
       .isString()
       .trim()
@@ -24,25 +35,42 @@ router.post(
         "Shipping Question",
         "Return / Refund",
         "General Enquiry",
-      ]),
-    body("message").isString().trim().notEmpty().isLength({ max: 5000 }),
+      ]).withMessage("Please choose a subject."),
+    body("message")
+      .isString().trim().notEmpty().withMessage("Please enter a message.")
+      .isLength({ max: 5000 }).withMessage("Message must be 5000 characters or fewer."),
+    body("productId").optional({ values: "falsy" }).isString().trim().isLength({ max: 100 }),
+    body("lang").optional().isIn(["en", "fa"]),
+    body("transferConsent")
+      .custom((value) => value === true)
+      .withMessage("Please confirm you're happy for your message to be sent to the artist in Iran."),
   ],
   validateRequest,
   async (req, res, next) => {
     try {
-      const { name, email, subject, message } = req.body;
+      const { name, email, subject, message, productId } = req.body;
+      const lang = req.body.lang ?? "en";
+
+      /* Look the artwork up rather than trusting a client-supplied title.
+         An unknown id is ignored — the message itself still goes through. */
+      let product = null;
+      if (productId) {
+        const { rows } = await pool.query(`SELECT id, title, title_fa FROM products WHERE id = $1`, [productId]);
+        product = rows[0] ?? null;
+      }
 
       const { rows } = await pool.query(
-        `INSERT INTO contact_submissions (name, email, subject, message)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO contact_submissions
+           (name, email, subject, message, product_id, language, transfer_consent_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
          RETURNING id`,
-        [name, email, subject, message]
+        [name, email, subject, message, product?.id ?? null, lang]
       );
 
       const submissionId = rows[0].id;
       const emailResults = await Promise.allSettled([
-        sendContactNotification({ name, email, subject, message }),
-        sendContactConfirmation({ name, email, subject, message }),
+        sendContactNotification({ name, email, subject, message, product, lang }),
+        sendContactConfirmation({ name, email, subject, message, product, lang }),
       ]);
 
       const [ownerEmailResult, customerEmailResult] = emailResults;

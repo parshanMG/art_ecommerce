@@ -5,18 +5,47 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
-import { useInView } from "../hooks/useInView";
+import { useCanHover } from "../hooks/useCanHover";
 import { COMMERCE_ENABLED } from "../config/features";
+import { useLanguage } from "../i18n/LanguageContext";
+import { formatPrice, formatDigits, productText } from "../i18n/format";
 
 /* ─────────────────────────────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────────────────────────────── */
-// Formats a number as a USD currency string e.g. 1500 → "$1,500.00"
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+/* Text in each language */
+const COPY = {
+  en: {
+    eyebrow: "Featured Works",
+    heading: "Recent Paintings",
+    viewAll: "View All Works",
+    prev: "Previous featured products",
+    next: "Next featured products",
+    goToSlide: (n) => `Go to slide ${n}`,
+    size: "Size", medium: "Medium", year: "Year",
+    sold: "Sold",
+    enquire: "Enquire",
+    addToBasket: "Add to Basket +",
+    added: "Added ✓",
+    loadError: "Couldn't load the paintings. Please try again later.",
+    empty: "No featured paintings right now.",
+  },
+  fa: {
+    eyebrow: "آثار منتخب",
+    heading: "نقاشی‌های اخیر",
+    viewAll: "مشاهده همه آثار",
+    prev: "آثار قبلی",
+    next: "آثار بعدی",
+    goToSlide: (n) => `رفتن به اسلاید ${n}`,
+    size: "اندازه", medium: "تکنیک", year: "سال",
+    sold: "فروخته شد",
+    enquire: "استعلام",
+    addToBasket: "افزودن به سبد +",
+    added: "افزوده شد ✓",
+    loadError: "بارگذاری نقاشی‌ها ممکن نشد. لطفاً بعداً دوباره تلاش کنید.",
+    empty: "در حال حاضر اثر منتخبی وجود ندارد.",
+  },
+};
 
 // Returns how many cards to show per carousel slide based on viewport width.
 // Defined outside the component so the resize useEffect never holds a stale reference.
@@ -30,6 +59,8 @@ const getPageSize = () => {
    FEATURED PRODUCTS CAROUSEL
    Displays products that have featured:true in products.json.
    Cards flip on hover to reveal details + an add/remove basket button.
+   Touch screens can't hover, so there a tap flips the card instead;
+   keyboard focus on a button on the back flips it too.
 
    Pagination:
      • pageSize controls how many cards show per slide (default 3)
@@ -45,12 +76,22 @@ export default function FeaturedProductsCarousel() {
   const [pageIndex, setPageIndex] = useState(0);   // which slide page is currently visible
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState("");
+  const [flippedId, setFlippedId] = useState(null); // card flipped by a tap (touch screens only)
+  const canHover = useCanHover();
+  const { lang, isRtl } = useLanguage();
+  const c = COPY[lang];
 
   // Cart actions and state from CartContext
   const { addToCart, removeFromCart, cartItems } = useCart();
 
   // Helper to check if a product is already in the cart
   const isInCart = (productId) => cartItems.some((item) => item.id === productId);
+
+  // Taps on the card's own links/buttons do their job without flipping it
+  const handleTap = (e, productId) => {
+    if (canHover || e.target.closest("a, button")) return;
+    setFlippedId((prev) => (prev === productId ? null : productId));
+  };
 
   /* ── Fetch featured products on mount ── */
   useEffect(() => {
@@ -59,7 +100,7 @@ export default function FeaturedProductsCarousel() {
     async function loadProducts() {
       try {
         const allProducts      = await fetchProducts();
-        // getFeaturedProducts filters for available:true && featured:true
+        // getFeaturedProducts keeps featured:true items (sold ones show a SOLD badge)
         const featuredProducts = getFeaturedProducts(allProducts);
         if (isMounted) setProducts(featuredProducts);
       } catch (loadError) {
@@ -134,8 +175,8 @@ export default function FeaturedProductsCarousel() {
       </div>
     </div>
   );
-  if (error)     return <div className="text-center py-10 text-red-600">{error}</div>;
-  if (!products.length) return <div className="text-center py-10 text-gray-600">No featured products available right now.</div>;
+  if (error)     return <div className="text-center py-10 text-red-600">{c.loadError}</div>;
+  if (!products.length) return <div className="text-center py-10 text-gray-600">{c.empty}</div>;
 
   return (
     <div>
@@ -147,14 +188,14 @@ export default function FeaturedProductsCarousel() {
       ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-0 mb-8">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-[#6F8F8B] mb-1">Featured Works</p>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-[#2F2A26]">Recent Paintings</h2>
+          <p className="text-xs uppercase tracking-[0.25em] text-[#6F8F8B] mb-1">{c.eyebrow}</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-[#2F2A26]">{c.heading}</h2>
         </div>
         <Link
           to="/shop"
           className="self-start sm:self-auto text-xs sm:text-sm font-medium tracking-[0.15em] sm:tracking-wide uppercase sm:normal-case text-[#D98C7A] sm:text-[#2F2A26] hover:text-[#D98C7A] transition flex items-center gap-1.5 sm:pb-1"
         >
-          View All Works <span aria-hidden="true">→</span>
+          {c.viewAll} <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
         </Link>
       </div>
 
@@ -164,106 +205,132 @@ export default function FeaturedProductsCarousel() {
         {/* Previous arrow */}
         <button
           type="button"
-          aria-label="Previous featured products"
+          aria-label={c.prev}
           onClick={goPrev}
           className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-[#E8DCD0] transition rounded-full flex items-center justify-center"
         >
           <img
             src="/images/Icons/arrow_back_ios_new_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png"
-            alt="Previous"
-            className="w-5 h-5 md:w-6 md:h-6"
+            alt=""
+            className="w-5 h-5 md:w-6 md:h-6 rtl:-scale-x-100"
           />
         </button>
 
         {/* ── Sliding window ────────────────────────────────────────
             overflow-hidden clips the off-screen pages.
-            The inner flex div shifts left by pageIndex * 100% to
-            reveal the correct page.
+            The inner flex div shifts by pageIndex * 100% to reveal the
+            correct page — leftwards in English, rightwards in Persian
+            (right-to-left pages are laid out from the right).
         ─────────────────────────────────────────────────────────── */}
         <div className="overflow-hidden flex-1">
           <div
             className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${pageIndex * 100}%)` }}
+            style={{ transform: `translateX(${isRtl ? "" : "-"}${pageIndex * 100}%)` }}
           >
             {pages.map((page, idx) => (
               <div key={idx} className="w-full shrink-0 flex flex-col sm:flex-row gap-6 md:gap-8">
                 {page.map((product, cardIdx) => {
                   const delay = cardIdx * 120;
+                  const isFlipped = flippedId === product.id;
                   return (
                   // ── Flip card ─────────────────────────────────────────
                   <article
                     key={product.id}
+                    onClick={(e) => handleTap(e, product.id)}
                     className="group flex-1 [perspective:1000px] card-enter"
                     style={{ "--card-delay": `${delay}ms` }}
                   >
-                    <div className="relative h-80 md:h-96 w-full transition-transform duration-700 ease-in-out [transition-delay:0ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-hover:[transition-delay:500ms]">
+                    <div className={`relative h-80 md:h-96 w-full transition-transform duration-700 ease-in-out [transition-delay:0ms] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-hover:[transition-delay:500ms] group-focus-within:[transform:rotateY(180deg)] ${isFlipped ? "[transform:rotateY(180deg)]" : ""}`}>
 
                       {/* ── Card front ──────────────────────────────── */}
                       <div className="absolute inset-0 rounded-xl overflow-hidden [backface-visibility:hidden]">
+                        {/* Touch-only cue that the card can be tapped for details */}
+                        {!canHover && (
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute bottom-4 end-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                              <circle cx="12" cy="12" r="9" />
+                              <path strokeLinecap="round" d="M12 11v5M12 8h.01" />
+                            </svg>
+                          </span>
+                        )}
                         {!product.available && (
-                          <div className="absolute top-4 right-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full shadow-md">
-                            Sold
+                          <div className="absolute top-4 end-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full shadow-md">
+                            {c.sold}
                           </div>
                         )}
                         <img
                           src={product.image}
-                          alt={product.title}
+                          alt={productText(product, "title", lang)}
                           className={`w-full h-full object-cover ${!product.available ? "[filter:grayscale(0.4)]" : ""}`}
                           loading="lazy"
                         />
                         {/* Title + price gradient overlay */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-5 py-4">
-                          <h3 className="text-white text-lg font-semibold leading-tight">{product.title}</h3>
-                          <p className="text-white/80 text-sm mt-0.5">{formatCurrency(product.price)}</p>
+                          <h3 className="text-white text-lg font-semibold leading-tight">{productText(product, "title", lang)}</h3>
+                          <p className="text-white/80 text-sm mt-0.5">{formatPrice(product.price, lang)}</p>
                         </div>
                       </div>
 
                       {/* ── Card back ───────────────────────────────────
                           [transform:rotateY(180deg)] pre-rotates the back
                           so it faces away until the flip completes.
+                          It only takes clicks while showing, so its
+                          buttons can't be tapped through the front.
                       ─────────────────────────────────────────────── */}
-                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-[#E8DCD0] px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                      <div className={`absolute inset-0 rounded-xl overflow-hidden bg-[#E8DCD0] px-6 py-7 flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)] ${isFlipped ? "" : "pointer-events-none group-hover:pointer-events-auto"}`}>
                         <div>
-                          <h3 className="text-xl font-semibold text-[#2F2A26] mb-4 leading-snug">{product.title}</h3>
+                          <h3 className="text-xl font-semibold text-[#2F2A26] mb-4 leading-snug">{productText(product, "title", lang)}</h3>
 
                           {/* Product metadata — only renders if the field exists */}
                           <dl className="space-y-2 text-sm">
                             {product.dimensions && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Size</dt>
-                                <dd className="text-gray-600">{product.dimensions}</dd>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">{c.size}</dt>
+                                <dd className="text-gray-600">{productText(product, "dimensions", lang)}</dd>
                               </div>
                             )}
                             {product.medium && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Medium</dt>
-                                <dd className="text-gray-600">{product.medium}</dd>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">{c.medium}</dt>
+                                <dd className="text-gray-600">{productText(product, "medium", lang)}</dd>
                               </div>
                             )}
                             {product.year && (
                               <div className="flex gap-2">
-                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">Year</dt>
-                                <dd className="text-gray-600">{product.year}</dd>
+                                <dt className="font-medium text-[#2F2A26] w-16 shrink-0">{c.year}</dt>
+                                <dd className="text-gray-600">{formatDigits(product.year, lang)}</dd>
                               </div>
                             )}
                           </dl>
 
-                          <p className="mt-5 text-xl font-semibold text-[#2F2A26]">{formatCurrency(product.price)}</p>
+                          <p className="mt-5 text-xl font-semibold text-[#2F2A26]">{formatPrice(product.price, lang)}</p>
                         </div>
 
-                        {/* Add / Remove basket toggle button */}
-                        {COMMERCE_ENABLED && (product.available ? (
-                          <button
-                            onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
-                            className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition bg-[#D98C7A] hover:bg-[#bf7360] text-white"
+                        <div className="flex flex-col gap-2">
+                          {/* Add / Remove basket toggle button */}
+                          {COMMERCE_ENABLED && (product.available ? (
+                            <button
+                              onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
+                              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition bg-[#D98C7A] hover:bg-[#bf7360] text-white"
+                            >
+                              {isInCart(product.id) ? c.added : c.addToBasket}
+                            </button>
+                          ) : (
+                            <div className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center bg-[#E8DCD0] text-[#A89E94] cursor-default">
+                              {c.sold}
+                            </div>
+                          ))}
+                          {/* Enquire button — always visible */}
+                          <Link
+                            to={`/contact?product=${product.id}`}
+                            className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center transition bg-[#2F2A26] text-white hover:bg-[#D98C7A]"
                           >
-                            {isInCart(product.id) ? "Added ✓" : "Add to Basket +"}
-                          </button>
-                        ) : (
-                          <div className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center bg-[#E8DCD0] text-[#A89E94] cursor-default">
-                            Sold
-                          </div>
-                        ))}
+                            {c.enquire}
+                          </Link>
+                        </div>
                       </div>
 
                     </div>
@@ -279,14 +346,14 @@ export default function FeaturedProductsCarousel() {
         {/* Next arrow */}
         <button
           type="button"
-          aria-label="Next featured products"
+          aria-label={c.next}
           onClick={goNext}
           className="shrink-0 w-10 h-10 md:w-12 md:h-12 hover:bg-[#E8DCD0] transition rounded-full flex items-center justify-center"
         >
           <img
             src="/images/Icons/arrow_forward_ios_60dp_BLACK_FILL0_wght400_GRAD0_opsz48.png"
-            alt="Next"
-            className="w-5 h-5 md:w-6 md:h-6"
+            alt=""
+            className="w-5 h-5 md:w-6 md:h-6 rtl:-scale-x-100"
           />
         </button>
       </div>
@@ -297,7 +364,7 @@ export default function FeaturedProductsCarousel() {
           <button
             key={idx}
             onClick={() => setPageIndex(idx)}
-            aria-label={`Go to slide ${idx + 1}`}
+            aria-label={c.goToSlide(formatDigits(idx + 1, lang))}
             className={`w-2.5 h-2.5 rounded-full transition ${idx === pageIndex ? "bg-[#D98C7A]" : "bg-[#E8DCD0]"}`}
           />
         ))}

@@ -3,7 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import { useCart } from "../context/CartContext";
 import { useInView } from "../hooks/useInView";
+import { useCanHover } from "../hooks/useCanHover";
 import { COMMERCE_ENABLED } from "../config/features";
+import { useLanguage } from "../i18n/LanguageContext";
+import { formatPrice, productText } from "../i18n/format";
 
 /* ─────────────────────────────────────────────────────────────────────
    CATEGORY METADATA
@@ -11,12 +14,50 @@ import { COMMERCE_ENABLED } from "../config/features";
    collection grows — products.json category values must match these keys.
 ───────────────────────────────────────────────────────────────────── */
 const CATEGORY_META = {
-  watercolour:   { label: "Watercolour",   order: 1 },
-  calligraphy:   { label: "Calligraphy",   order: 2 },
-  oil:           { label: "Oil on Canvas", order: 3 },
-  acrylic:       { label: "Acrylic",       order: 4 },
-  "mixed-media": { label: "Mixed Media",   order: 5 },
-  print:         { label: "Prints",        order: 6 },
+  watercolour:   { label: { en: "Watercolour",   fa: "آبرنگ" },             order: 1 },
+  calligraphy:   { label: { en: "Calligraphy",   fa: "خوشنویسی" },          order: 2 },
+  oil:           { label: { en: "Oil on Canvas", fa: "رنگ روغن روی بوم" },  order: 3 },
+  acrylic:       { label: { en: "Acrylic",       fa: "اکریلیک" },           order: 4 },
+  "mixed-media": { label: { en: "Mixed Media",   fa: "تلفیقی" },            order: 5 },
+  print:         { label: { en: "Prints",        fa: "چاپ‌ها" },             order: 6 },
+};
+
+const categoryLabel = (cat, lang) => CATEGORY_META[cat]?.label[lang] ?? cat;
+
+/* Text in each language */
+const COPY = {
+  en: {
+    eyebrow: "Gallery",
+    heading: "All Artwork",
+    intro: "Browse the full collection of original paintings and limited-edition prints.",
+    all: "All",
+    availableOnly: "Available Only",
+    sold: "Sold",
+    size: "Size",
+    type: "Type",
+    soldNote: "This piece has been sold",
+    buyNow: "Buy Now",
+    addToBasket: "Add to Basket +",
+    added: "Added ✓",
+    enquire: "Enquire",
+    loadError: "Couldn't load the gallery. Please try again later.",
+  },
+  fa: {
+    eyebrow: "گالری",
+    heading: "همه آثار",
+    intro: "مجموعه کامل نقاشی‌های اصل و چاپ‌های محدود را ببینید.",
+    all: "همه",
+    availableOnly: "فقط موجود",
+    sold: "فروخته شد",
+    size: "اندازه",
+    type: "تکنیک",
+    soldNote: "این اثر فروخته شده است",
+    buyNow: "خرید",
+    addToBasket: "افزودن به سبد +",
+    added: "افزوده شد ✓",
+    enquire: "استعلام",
+    loadError: "بارگذاری گالری ممکن نشد. لطفاً بعداً دوباره تلاش کنید.",
+  },
 };
 
 // Height of each slot in the drum roller (3 slots are visible at once)
@@ -37,6 +78,8 @@ function SkeletonCard() {
    PRODUCT CARD
    Renders a single artwork card in the masonry-style grid.
    Hovering dims the image and reveals the product info + action buttons.
+   Touch screens can't hover, so there a tap toggles the same overlay;
+   keyboard focus on a button inside reveals it too.
 
    Props:
      product — a single product object from products.json
@@ -44,15 +87,27 @@ function SkeletonCard() {
 function ProductCard({ product, index = 0 }) {
   const { addToCart, removeFromCart, cartItems } = useCart();
   const navigate = useNavigate();
+  const canHover = useCanHover();
+  const [isRevealed, setIsRevealed] = useState(false);
+  const { lang } = useLanguage();
+  const c = COPY[lang];
+  const title = productText(product, "title", lang);
   const inCart = cartItems.some((item) => item.id === product.id);
   const isSold = !product.available;
   const [ref, isVisible] = useInView({ threshold: 0.1 });
   // Cap delay at 400 ms so late cards don't wait too long
   const delay = Math.min(index * 80, 400);
 
+  // Taps on the overlay's own links/buttons do their job without toggling
+  const handleTap = (e) => {
+    if (canHover || e.target.closest("a, button")) return;
+    setIsRevealed((prev) => !prev);
+  };
+
   return (
     <article
       ref={ref}
+      onClick={handleTap}
       className={`group relative w-full max-w-[34rem] mx-auto overflow-hidden rounded-2xl shadow-sm ${
         isVisible ? "card-enter" : "card-hidden"
       }`}
@@ -65,32 +120,46 @@ function ProductCard({ product, index = 0 }) {
       ─────────────────────────────────────────────────────────── */}
       {/* Persistent SOLD badge */}
       {isSold && (
-        <div className="absolute top-4 right-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full pointer-events-none shadow-md">
-          Sold
+        <div className="absolute top-4 end-4 z-10 bg-[#2F2A26]/75 text-white text-sm font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full pointer-events-none shadow-md">
+          {c.sold}
         </div>
       )}
 
       <img
         src={product.image}
-        alt={product.title}
-        className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 ${isSold ? "[filter:grayscale(0.4)]" : ""}`}
+        alt={title}
+        className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 ${isRevealed ? "brightness-50" : ""} ${isSold ? "grayscale-40" : ""}`}
         loading="lazy"
       />
 
+      {/* Touch-only cue that the card can be tapped for details */}
+      {!canHover && !isRevealed && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-4 end-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+            <circle cx="12" cy="12" r="9" />
+            <path strokeLinecap="round" d="M12 11v5M12 8h.01" />
+          </svg>
+        </span>
+      )}
+
       {/* ── Hover overlay ─────────────────────────────────────────
-          Gradient overlay fades in on hover (opacity-0 → opacity-100).
-          pointer-events-none on the wrapper, pointer-events-auto on
-          the inner div so buttons remain clickable.
+          Gradient overlay fades in on hover, keyboard focus, or a tap
+          on touch screens (opacity-0 → opacity-100).
+          The inner div only takes clicks while the overlay is showing,
+          so invisible buttons can't be hit by accident.
       ─────────────────────────────────────────────────────────── */}
-      <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/35 to-transparent p-6 opacity-0 transition duration-300 group-hover:opacity-100">
-        <div className="pointer-events-auto w-full text-white">
+      <div className={`pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/35 to-transparent p-6 transition duration-300 group-hover:opacity-100 group-focus-within:opacity-100 ${isRevealed ? "opacity-100" : "opacity-0"}`}>
+        <div className={`w-full text-white ${isRevealed ? "pointer-events-auto" : "group-hover:pointer-events-auto"}`}>
 
           {/* Product info */}
           <div className="mb-4">
-            <p className="text-2xl font-semibold">{product.title}</p>
-            <p className="mt-1 text-sm text-white/90">Size: {product.dimensions}</p>
-            <p className="text-sm text-white/90">Type: {product.medium}</p>
-            <p className="mt-1 text-base font-medium">${product.price.toFixed(2)}</p>
+            <p className="text-2xl font-semibold">{title}</p>
+            <p className="mt-1 text-sm text-white/90">{c.size}: {productText(product, "dimensions", lang)}</p>
+            <p className="text-sm text-white/90">{c.type}: {productText(product, "medium", lang)}</p>
+            <p className="mt-1 text-base font-medium">{formatPrice(product.price, lang)}</p>
           </div>
 
           {/* ── Action buttons ──────────────────────────────────────
@@ -101,7 +170,7 @@ function ProductCard({ product, index = 0 }) {
           ─────────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-2">
             {isSold ? (
-              <span className="text-white/70 text-sm italic">This piece has been sold</span>
+              <span className="text-white/70 text-sm italic">{c.soldNote}</span>
             ) : (
               COMMERCE_ENABLED && (
                 <>
@@ -114,7 +183,7 @@ function ProductCard({ product, index = 0 }) {
                         : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
                     }`}
                   >
-                    Buy Now
+                    {c.buyNow}
                   </button>
                   <button
                     onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
@@ -124,7 +193,7 @@ function ProductCard({ product, index = 0 }) {
                         : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
                     }`}
                   >
-                    {inCart ? "Added ✓" : "Add to Basket +"}
+                    {inCart ? c.added : c.addToBasket}
                   </button>
                 </>
               )
@@ -133,7 +202,7 @@ function ProductCard({ product, index = 0 }) {
               to={`/contact?product=${product.id}`}
               className="rounded-lg bg-[#D98C7A] px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-[#bf7360]"
             >
-              Enquire
+              {c.enquire}
             </Link>
           </div>
 
@@ -159,6 +228,8 @@ export default function Gallery() {
   const [flashCat, setFlashCat]           = useState(null);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const sectionRefs    = useRef({});
+  const { lang } = useLanguage();
+  const c = COPY[lang];
   const flashTimeout   = useRef(null);
 
   /* ── Fetch products ────────────────────────────────────────────── */
@@ -253,8 +324,8 @@ export default function Gallery() {
         <div className="mb-10 border-b border-[#E8DCD0] pb-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>Gallery</p>
-              <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>All Artwork</h1>
+              <p className="header-item text-sm uppercase tracking-[0.3em] text-[#D98C7A]" style={{ "--header-delay": "80ms" }}>{c.eyebrow}</p>
+              <h1 className="header-item mt-3 text-4xl font-semibold text-[#2F2A26]" style={{ "--header-delay": "200ms" }}>{c.heading}</h1>
             </div>
             {/* ── Availability filter toggle ── */}
             <div className="header-item mt-auto pb-1 flex items-center gap-1.5 rounded-full border border-[#E8DCD0] bg-[#F6F1EB] p-1 shadow-sm" style={{ "--header-delay": "320ms" }}>
@@ -266,7 +337,7 @@ export default function Gallery() {
                     : "text-[#A89E94] hover:text-[#6B6159]"
                 }`}
               >
-                All
+                {c.all}
               </button>
               <button
                 onClick={() => setShowAvailableOnly(true)}
@@ -276,12 +347,12 @@ export default function Gallery() {
                     : "text-[#A89E94] hover:text-[#6B6159]"
                 }`}
               >
-                Available Only
+                {c.availableOnly}
               </button>
             </div>
           </div>
           <p className="header-item mt-4 max-w-2xl text-base text-gray-600" style={{ "--header-delay": "380ms" }}>
-            Browse the full collection of original paintings and limited-edition prints.
+            {c.intro}
           </p>
         </div>
       </section>
@@ -300,7 +371,7 @@ export default function Gallery() {
                     : "text-[#A89E94] border-transparent hover:text-[#6B6159]"
                 }`}
               >
-                {CATEGORY_META[cat]?.label ?? cat}
+                {categoryLabel(cat, lang)}
               </button>
             ))}
           </div>
@@ -351,7 +422,7 @@ export default function Gallery() {
                       <div
                         key={cat}
                         onClick={() => handleCategoryClick(cat)}
-                        className="flex items-center cursor-pointer select-none pl-6"
+                        className="flex items-center cursor-pointer select-none ps-6"
                         style={{ height: ITEM_H }}
                       >
                         <span
@@ -364,7 +435,7 @@ export default function Gallery() {
                             transition:    "all 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
                           }}
                         >
-                          {CATEGORY_META[cat]?.label ?? cat}
+                          {categoryLabel(cat, lang)}
                         </span>
                       </div>
                     );
@@ -382,15 +453,16 @@ export default function Gallery() {
                   borderBottom: "1px solid #E8DCD0",
                 }}
               />
-              {/* Terracotta accent bar on the left of the center slot */}
+              {/* Terracotta accent bar on the start edge of the center slot */}
               <div
-                className="absolute left-0 pointer-events-none"
+                className="absolute start-0 pointer-events-none"
                 style={{
                   top:          ITEM_H + 20,
                   height:       ITEM_H - 40,
                   width:        3,
                   background:   "#D98C7A",
-                  borderRadius: "0 2px 2px 0",
+                  borderStartEndRadius: 2,
+                  borderEndEndRadius:   2,
                 }}
               />
               {/* ── Top fade mask — only covers the very edge so adjacent items stay readable ── */}
@@ -431,7 +503,7 @@ export default function Gallery() {
               </div>
             </div>
           )}
-          {error     && <p className="text-center text-red-600 py-20">{error}</p>}
+          {error     && <p className="text-center text-red-600 py-20">{c.loadError}</p>}
 
           {categories.map(([cat, items]) => {
             const leftItems  = items.filter((_, i) => i % 2 === 0);
