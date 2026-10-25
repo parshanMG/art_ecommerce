@@ -10,7 +10,8 @@
    Safe to re-run — existing rows are updated in place:
      • Catalog fields (title, price, category, medium, dimensions, year,
        featured, image, thumbnail, description, and the optional Persian
-       title_fa / medium_fa / dimensions_fa) always follow the JSON.
+       title_fa / medium_fa / dimensions_fa / description_fa) always follow
+       the JSON.
      • "available": false in the JSON marks a piece sold (e.g. sold at an
        exhibition). "available": true never revives a piece that was sold
        through the site — un-sell those by hand in the database.
@@ -41,11 +42,11 @@ async function seed() {
         `INSERT INTO products (
           id, title, price, category, medium, dimensions,
           year, available, reserved, featured, image, thumbnail, description,
-          title_fa, medium_fa, dimensions_fa
+          title_fa, medium_fa, dimensions_fa, description_fa
         ) VALUES (
           $1, $2, $3, $4, $5, $6,
           $7, $8, FALSE, $9, $10, $11, $12,
-          $13, $14, $15
+          $13, $14, $15, $16
         )
         ON CONFLICT (id) DO UPDATE SET
           title       = EXCLUDED.title,
@@ -61,6 +62,7 @@ async function seed() {
           title_fa      = EXCLUDED.title_fa,
           medium_fa     = EXCLUDED.medium_fa,
           dimensions_fa = EXCLUDED.dimensions_fa,
+          description_fa = EXCLUDED.description_fa,
           available   = products.available AND EXCLUDED.available`,
         [
           p.id,
@@ -78,6 +80,7 @@ async function seed() {
           p.title_fa      ?? null,
           p.medium_fa     ?? null,
           p.dimensions_fa ?? null,
+          p.description_fa ?? null,
         ]
       );
       console.log(`  ✓ ${p.id}`);
