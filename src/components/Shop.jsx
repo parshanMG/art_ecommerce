@@ -157,8 +157,8 @@ function ProductCard({ product, index = 0 }) {
           {/* Product info */}
           <div className="mb-4">
             <p className="text-2xl font-semibold">{title}</p>
-            <p className="mt-1 text-sm text-white/90">{c.size}: {productText(product, "dimensions", lang)}</p>
-            <p className="text-sm text-white/90">{c.type}: {productText(product, "medium", lang)}</p>
+            <p className="mt-1 text-sm text-white/90">{c.size}: <bdi>{productText(product, "dimensions", lang)}</bdi></p>
+            <p className="text-sm text-white/90">{c.type}: <bdi>{productText(product, "medium", lang)}</bdi></p>
             <p className="mt-1 text-base font-medium">{formatPrice(product.price, lang)}</p>
           </div>
 
