@@ -289,13 +289,13 @@ export default function FeaturedProductsCarousel() {
                             {product.dimensions && (
                               <div className="flex gap-2">
                                 <dt className="font-medium text-[#2F2A26] w-16 shrink-0">{c.size}</dt>
-                                <dd className="text-gray-600">{productText(product, "dimensions", lang)}</dd>
+                                <dd className="text-gray-600"><bdi>{productText(product, "dimensions", lang)}</bdi></dd>
                               </div>
                             )}
                             {product.medium && (
                               <div className="flex gap-2">
                                 <dt className="font-medium text-[#2F2A26] w-16 shrink-0">{c.medium}</dt>
-                                <dd className="text-gray-600">{productText(product, "medium", lang)}</dd>
+                                <dd className="text-gray-600"><bdi>{productText(product, "medium", lang)}</bdi></dd>
                               </div>
                             )}
                             {product.year && (

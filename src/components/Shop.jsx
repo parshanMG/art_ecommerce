@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
+import ArtworkModal from "./ArtworkModal";
 import { useCart } from "../context/CartContext";
 import { useInView } from "../hooks/useInView";
 import { useCanHover } from "../hooks/useCanHover";
@@ -40,6 +41,7 @@ const COPY = {
     addToBasket: "Add to Basket +",
     added: "Added ✓",
     enquire: "Enquire",
+    view: (title) => `View ${title}`,
     loadError: "Couldn't load the gallery. Please try again later.",
   },
   fa: {
@@ -56,6 +58,7 @@ const COPY = {
     addToBasket: "افزودن به سبد +",
     added: "افزوده شد ✓",
     enquire: "استعلام",
+    view: (title) => `مشاهده ${title}`,
     loadError: "بارگذاری گالری ممکن نشد. لطفاً بعداً دوباره تلاش کنید.",
   },
 };
@@ -78,17 +81,18 @@ function SkeletonCard() {
    PRODUCT CARD
    Renders a single artwork card in the masonry-style grid.
    Hovering dims the image and reveals the product info + action buttons.
-   Touch screens can't hover, so there a tap toggles the same overlay;
-   keyboard focus on a button inside reveals it too.
+   Clicking (or tapping) anywhere on the card opens the full artwork
+   viewer — see ArtworkModal.jsx. The image itself is a button, so
+   keyboard users can open it too; focusing it reveals the overlay.
 
    Props:
      product — a single product object from products.json
+     onOpen  — called with the product id to open the viewer
 ───────────────────────────────────────────────────────────────────── */
-function ProductCard({ product, index = 0 }) {
+function ProductCard({ product, index = 0, onOpen }) {
   const { addToCart, removeFromCart, cartItems } = useCart();
   const navigate = useNavigate();
   const canHover = useCanHover();
-  const [isRevealed, setIsRevealed] = useState(false);
   const { lang } = useLanguage();
   const c = COPY[lang];
   const title = productText(product, "title", lang);
@@ -98,17 +102,17 @@ function ProductCard({ product, index = 0 }) {
   // Cap delay at 400 ms so late cards don't wait too long
   const delay = Math.min(index * 80, 400);
 
-  // Taps on the overlay's own links/buttons do their job without toggling
-  const handleTap = (e) => {
-    if (canHover || e.target.closest("a, button")) return;
-    setIsRevealed((prev) => !prev);
+  // The overlay's own links/buttons (Enquire, basket) do their job instead
+  const handleClick = (e) => {
+    if (e.target.closest("a, button:not([data-open-artwork])")) return;
+    onOpen(product.id);
   };
 
   return (
     <article
       ref={ref}
-      onClick={handleTap}
-      className={`group relative w-full max-w-[34rem] mx-auto overflow-hidden rounded-2xl shadow-sm ${
+      onClick={handleClick}
+      className={`group relative w-full max-w-[34rem] mx-auto overflow-hidden rounded-2xl shadow-sm cursor-zoom-in ${
         isVisible ? "card-enter" : "card-hidden"
       }`}
       style={{ "--card-delay": `${delay}ms` }}
@@ -125,40 +129,42 @@ function ProductCard({ product, index = 0 }) {
         </div>
       )}
 
-      <img
-        src={product.image}
-        alt={title}
-        className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 ${isRevealed ? "brightness-50" : ""} ${isSold ? "grayscale-40" : ""}`}
-        loading="lazy"
-      />
+      <button type="button" data-open-artwork aria-label={c.view(title)} className="block w-full cursor-zoom-in">
+        <img
+          src={product.image}
+          alt=""
+          className={`h-[30rem] sm:h-[38rem] lg:h-[46rem] w-full object-cover transition duration-300 group-hover:brightness-50 group-has-[:focus-visible]:brightness-50 ${isSold ? "grayscale-40" : ""}`}
+          loading="lazy"
+        />
+      </button>
 
-      {/* Touch-only cue that the card can be tapped for details */}
-      {!canHover && !isRevealed && (
+      {/* Touch-only cue that the card opens a larger view */}
+      {!canHover && (
         <span
           aria-hidden="true"
           className="pointer-events-none absolute bottom-4 end-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M12 11v5M12 8h.01" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
           </svg>
         </span>
       )}
 
       {/* ── Hover overlay ─────────────────────────────────────────
-          Gradient overlay fades in on hover, keyboard focus, or a tap
-          on touch screens (opacity-0 → opacity-100).
+          Gradient overlay fades in on hover or keyboard focus
+          (opacity-0 → opacity-100). Touch screens skip it — a tap
+          opens the full viewer instead.
           The inner div only takes clicks while the overlay is showing,
           so invisible buttons can't be hit by accident.
       ─────────────────────────────────────────────────────────── */}
-      <div className={`pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/35 to-transparent p-6 transition duration-300 group-hover:opacity-100 group-focus-within:opacity-100 ${isRevealed ? "opacity-100" : "opacity-0"}`}>
-        <div className={`w-full text-white ${isRevealed ? "pointer-events-auto" : "group-hover:pointer-events-auto"}`}>
+      <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/75 via-black/35 to-transparent p-6 opacity-0 transition duration-300 group-hover:opacity-100 group-has-[:focus-visible]:opacity-100">
+        <div className="w-full text-white group-hover:pointer-events-auto">
 
           {/* Product info */}
           <div className="mb-4">
             <p className="text-2xl font-semibold">{title}</p>
-            <p className="mt-1 text-sm text-white/90">{c.size}: {productText(product, "dimensions", lang)}</p>
-            <p className="text-sm text-white/90">{c.type}: {productText(product, "medium", lang)}</p>
+            <p className="mt-1 text-sm text-white/90">{c.size}: <bdi>{productText(product, "dimensions", lang)}</bdi></p>
+            <p className="text-sm text-white/90">{c.type}: <bdi>{productText(product, "medium", lang)}</bdi></p>
             <p className="mt-1 text-base font-medium">{formatPrice(product.price, lang)}</p>
           </div>
 
@@ -219,6 +225,10 @@ function ProductCard({ product, index = 0 }) {
    category. Scrollspy highlights the active category as you scroll.
    The first card of each category briefly pulses with a terracotta
    ring to orient the user when that category becomes active.
+
+   Clicking a card opens ArtworkModal. The open piece lives in the URL
+   (/shop?art=<id>), so each piece has a shareable link and the phone's
+   back button closes the viewer.
 ───────────────────────────────────────────────────────────────────── */
 export default function Gallery() {
   const [products, setProducts]           = useState([]);
@@ -315,6 +325,59 @@ export default function Gallery() {
     () => Math.max(0, categories.findIndex(([cat]) => cat === activeCategory)),
     [categories, activeCategory]
   );
+
+  /* ── Artwork viewer ──────────────────────────────────────────────
+     The open piece is ?art=<id>. Opening from the grid pushes a
+     history entry, so closing goes back (and the browser's back
+     button closes it too). Arriving on a shared link has no entry to
+     go back to, so closing just removes the parameter. Previous/next
+     replace the entry instead of piling up history.
+     Order follows the grid: categories in sidebar order, then items.
+  ─────────────────────────────────────────────────────────────────── */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const openedFromGrid = useRef(false);
+
+  const galleryOrder = useMemo(() => categories.flatMap(([, items]) => items), [categories]);
+  const selectedId = searchParams.get("art");
+  const selectedIndex = galleryOrder.findIndex((p) => p.id === selectedId);
+  const selected = selectedIndex >= 0 ? galleryOrder[selectedIndex] : null;
+
+  const setArtParam = (id, options) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set("art", id);
+      else next.delete("art");
+      return next;
+    }, options);
+
+  const openArtwork = (id) => {
+    openedFromGrid.current = true;
+    setArtParam(id);
+  };
+
+  const closeArtwork = () => {
+    if (openedFromGrid.current) {
+      openedFromGrid.current = false;
+      navigate(-1);
+    } else {
+      setArtParam(null, { replace: true });
+    }
+  };
+
+  const stepArtwork = (delta) => {
+    const count = galleryOrder.length;
+    setArtParam(galleryOrder[(selectedIndex + delta + count) % count].id, { replace: true });
+  };
+
+  // Preload the neighbouring pieces so stepping through feels instant
+  useEffect(() => {
+    if (selectedIndex < 0 || galleryOrder.length < 2) return;
+    const count = galleryOrder.length;
+    [1, -1].forEach((delta) => {
+      new Image().src = galleryOrder[(selectedIndex + delta + count) % count].image;
+    });
+  }, [selectedIndex, galleryOrder]);
 
   return (
     <main className="min-h-screen bg-[#F6F1EB] pt-28 pb-20">
@@ -522,7 +585,7 @@ export default function Gallery() {
                         ref={isFirst ? (el) => { sectionRefs.current[cat] = el; } : null}
                         className={`w-full max-w-[34rem] mx-auto rounded-2xl scroll-mt-36 ${isFlashing ? "category-beacon" : ""}`}
                       >
-                        <ProductCard product={product} index={colIdx * 2} />
+                        <ProductCard product={product} index={colIdx * 2} onOpen={openArtwork} />
                       </div>
                     );
                   })}
@@ -533,7 +596,7 @@ export default function Gallery() {
                   <div className={`flex flex-1 flex-col gap-1 ${items.length >= 3 ? "md:mt-[14rem]" : ""}`}>
                     {rightItems.map((product, colIdx) => (
                       <div key={product.id}>
-                        <ProductCard product={product} index={colIdx * 2 + 1} />
+                        <ProductCard product={product} index={colIdx * 2 + 1} onOpen={openArtwork} />
                       </div>
                     ))}
                   </div>
@@ -545,6 +608,19 @@ export default function Gallery() {
         </div>
 
       </div>
+
+      {/* ── Full artwork viewer ── */}
+      {selected && (
+        <ArtworkModal
+          product={selected}
+          categoryLabel={categoryLabel(selected.category, lang)}
+          position={selectedIndex + 1}
+          total={galleryOrder.length}
+          onClose={closeArtwork}
+          onPrev={galleryOrder.length > 1 ? () => stepArtwork(-1) : undefined}
+          onNext={galleryOrder.length > 1 ? () => stepArtwork(1) : undefined}
+        />
+      )}
     </main>
   );
 }

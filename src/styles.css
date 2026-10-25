@@ -36,6 +36,35 @@ body {
   font-family: "Island Moments", cursive;
 }
 
+/* ── Artwork modal ──────────────────────────────────────────────────
+   Backdrop fades in; the panel fades and rises slightly.
+   Used by src/components/ArtworkModal.jsx.
+──────────────────────────────────────────────────────────────────── */
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-backdrop {
+  animation: modal-fade 0.3s ease both;
+}
+
+.modal-panel {
+  animation: modal-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-panel {
+    animation: none;
+  }
+}
+
 /* ── Persian ────────────────────────────────────────────────────────
    Applied when the visitor picks Persian (LanguageContext sets
    <html lang="fa" dir="rtl">).
