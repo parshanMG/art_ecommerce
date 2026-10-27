@@ -221,6 +221,9 @@ export default function FeaturedProductsCarousel() {
             The inner flex div shifts by pageIndex * 100% to reveal the
             correct page — leftwards in English, rightwards in Persian
             (right-to-left pages are laid out from the right).
+            Off-screen pages are inert: otherwise Tab reaches their
+            links and the browser scrolls this clipped box to show
+            them, knocking the carousel out of line.
         ─────────────────────────────────────────────────────────── */}
         <div className="overflow-hidden flex-1">
           <div
@@ -228,7 +231,12 @@ export default function FeaturedProductsCarousel() {
             style={{ transform: `translateX(${isRtl ? "" : "-"}${pageIndex * 100}%)` }}
           >
             {pages.map((page, idx) => (
-              <div key={idx} className="w-full shrink-0 flex flex-col sm:flex-row gap-6 md:gap-8">
+              <div
+                key={idx}
+                // React 18 has no boolean `inert` prop; "" sets the attribute
+                inert={idx === pageIndex ? undefined : ""}
+                className="w-full shrink-0 flex flex-col sm:flex-row gap-6 md:gap-8"
+              >
                 {page.map((product, cardIdx) => {
                   const delay = cardIdx * 120;
                   const isFlipped = flippedId === product.id;
