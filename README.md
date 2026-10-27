@@ -1,111 +1,211 @@
 # Maryam Mohseni — Art Portfolio
 
-Portfolio and (optional) shop for watercolour artist Maryam Mohseni.
+A bilingual (English / Persian) portfolio site for the watercolour artist Maryam Mohseni, with a complete Stripe shop built in and switched off by one setting.
 
-- **Frontend** — React 18 + Vite + Tailwind CSS v4 (repo root)
-- **Backend** — Express + PostgreSQL + Stripe + AWS SES (`server/`)
+The live site runs in **portfolio mode**: visitors browse the gallery and send enquiries, and sales are arranged directly with the artist. **Shop mode** adds a cart, Stripe checkout and order handling backed by PostgreSQL. It's kept working and tested so it can be turned on for a demo or a future store.
 
-The two are fully separate. In development Vite proxies `/api/*` to the backend on port 4000.
+- **Frontend:** React 18, Vite, Tailwind CSS v4, React Router
+- **Backend:** Node 20+, Express, AWS SES; in shop mode also PostgreSQL and Stripe
+- **Tests:** Node's built-in test runner, against a real PostgreSQL database in CI
 
-## Portfolio mode vs. shop mode
+## Highlights
 
-`COMMERCE_ENABLED` in `src/config/features.js` switches the purchase UI (cart, Add to Basket, Buy Now, `/checkout`) on or off. It is currently **off**.
+- **No double-selling.** Each painting exists once. Checkout reserves the pieces inside a transaction with `SELECT … FOR UPDATE`, so two buyers paying at the same moment can't both get the same piece. Reservations expire if checkout is abandoned and are re-checked right before the card is charged.
+- **The server sets the price.** The amount charged is worked out from database prices, never from anything the browser sends.
+- **Duplicate-safe webhooks.** Stripe can deliver the same event more than once, even concurrently; the webhook records one order either way. If a buyer pays after their reservation lapsed and someone else bought the piece, the order is flagged for a refund instead of overselling.
+- **Tests that prove the locking works.** The race-condition tests hold a row lock until both competing calls are waiting, then release them together. Remove the `FOR UPDATE` locks and those tests fail.
+- **One switch, two products.** In portfolio mode the server never loads Stripe or the database driver, and the frontend build leaves out all shop code, Stripe.js included.
+- **Bilingual and right-to-left.** Persian mirrors the whole layout using logical CSS properties, with self-hosted fonts and Persian digits.
+- **Privacy by design.** No cookies, analytics or third-party requests. Contact messages are emailed rather than stored, and sending them to the artist in Iran requires the visitor's explicit consent under UK GDPR Article 49(1)(a).
 
-Even in portfolio mode the site needs the backend and database for:
+## Architecture
 
-- the gallery — products come from `GET /api/products`
-- the contact form — `POST /api/contact` saves the message and emails it via SES
+```mermaid
+flowchart LR
+  subgraph Browser
+    SPA["React app<br/>(src/)"]
+  end
 
-The backend runs in portfolio mode when `STRIPE_SECRET_KEY` is blank: checkout and webhook routes answer `503`.
+  subgraph Server["Express API (server/)"]
+    Core["Core<br/>/api/products · /api/contact"]
+    Commerce["commerce/ — shop mode only<br/>/api/checkout · /api/webhooks/stripe"]
+  end
 
-## Languages
+  Catalog[("data/products.json")]
+  SES["AWS SES<br/>(email)"]
+  PG[("PostgreSQL<br/>products · orders")]
+  Stripe["Stripe"]
 
-The site is in English (default) and Persian. Visitors switch with the flags in the footer; Persian turns the whole layout right-to-left and uses the self-hosted Vazirmatn font.
-
-- Every component keeps its text in a `COPY = { en: {...}, fa: {...} }` object at the top of the file — edit both languages together.
-- `src/i18n/LanguageContext.jsx` holds the current language (`useLanguage()`), and `src/i18n/format.js` formats prices, numbers and product text.
-- Use logical Tailwind classes (`ps-`/`pe-`, `ms-`/`me-`, `start-`/`end-`, `text-start`) instead of left/right ones so layouts mirror correctly, and `rtl:-scale-x-100` on arrow icons.
-- Contact-form confirmation emails are sent in the language the visitor was using.
-
-## Local setup
-
-Requires Node 20+ and PostgreSQL.
-
-```bash
-# 1. Frontend dependencies
-npm install
-
-# 2. Backend dependencies
-cd server
-npm install
-
-# 3. Configure — copy and fill in both env files
-cp .env.example .env            # server/.env
-cp ../.env.example ../.env      # frontend .env
-
-# 4. Create the database (once), then build the schema and load products
-createdb art_ecommerce
-npm run migrate
-npm run seed
+  SPA --> Core
+  SPA -. shop mode .-> Commerce
+  SPA -. card details .-> Stripe
+  Core -- portfolio mode --> Catalog
+  Core --> SES
+  Commerce --> PG
+  Commerce --> Stripe
+  Stripe -- webhook --> Commerce
+  Commerce --> SES
 ```
 
-Run both in separate terminals:
+### The two modes
+
+| | Portfolio mode (default) | Shop mode |
+|---|---|---|
+| Switch | — | `COMMERCE_ENABLED=true` (server) and `VITE_COMMERCE_ENABLED=true` (frontend) |
+| Products | `server/data/products.json` | PostgreSQL, seeded from the same file, with live availability |
+| Contact form | Emailed via SES | Emailed via SES |
+| Checkout | Off (routes answer 503) | Cart, Stripe Payment Element, reservations, order emails |
+| Needs | SES | SES, PostgreSQL, a Stripe account |
+
+### Checkout flow (shop mode)
+
+1. **Details:** the buyer enters their address. `POST /api/checkout/create-payment-intent` reserves the pieces (row-locked), calculates the total from the database and creates a Stripe PaymentIntent.
+2. **Payment:** right before confirming, `POST /api/checkout/hold` re-checks that the pieces are still the buyer's and restarts the reservation clock. If they're gone, the PaymentIntent is cancelled before any money moves.
+3. **Webhook:** `payment_intent.succeeded` records the order and marks the pieces sold, in one transaction. Failed or cancelled payments release the hold.
+
+### Why payments are off on the live site
+
+The artist lives in Iran, and card processors including Stripe don't permit Iran-linked sales. So the live site takes enquiries only, and buyers arrange payment directly with the artist. The shop code stays complete and tested for demos and for any future setup where online payment is allowed.
+
+## Project structure
+
+```
+src/
+  components/           pages and sections (gallery, contact, about, privacy…)
+  features/commerce/    shop mode: Checkout, cart context, cart menu, buy buttons
+  i18n/                 language context and number/price formatting
+  config/features.js    COMMERCE_ENABLED, read from VITE_COMMERCE_ENABLED
+server/
+  index.js              checks the environment, picks the mode, starts the server
+  app.js                builds the Express app (also used by the tests)
+  catalog.js            reads data/products.json
+  data/products.json    the artwork catalog — the source of truth
+  routes/               products, contact
+  services/email.js     SES sender, email layout, contact emails
+  commerce/             shop mode only, loaded on demand
+    index.js            mounts the routes, products from the database
+    orders.js           reservations and order recording
+    routes/             checkout, Stripe webhook
+    db/                 connection pool, migrations, seed script
+  tests/                API, catalog and shop tests
+```
+
+## Running locally
+
+Requires Node 20+.
+
+### Portfolio mode
+
+No database needed.
+
+```bash
+npm install
+cd server && npm install
+cp .env.example .env            # fill in the SES settings to send email
+cp ../.env.example ../.env
+```
+
+Run the API and the site in separate terminals:
 
 ```bash
 cd server && npm run dev   # API on http://localhost:4000
-npm run dev                # site on http://localhost:5173
+npm run dev                # site on http://localhost:5173 (proxies /api to the API)
 ```
 
-To test checkout locally, forward Stripe webhooks with the Stripe CLI and put the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`:
+### Shop mode
+
+Also needs PostgreSQL and a Stripe account (test keys are fine).
+
+1. Set `COMMERCE_ENABLED=true`, the `DB_*` and `STRIPE_*` settings in `server/.env`, and `VITE_COMMERCE_ENABLED=true` and `VITE_STRIPE_PUBLISHABLE_KEY` in `.env`.
+2. Create the database and load the catalog:
+
+   ```bash
+   createdb art_ecommerce
+   cd server
+   npm run migrate
+   npm run seed
+   ```
+
+3. Forward Stripe webhooks, and put the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`:
+
+   ```bash
+   stripe listen --forward-to localhost:4000/api/webhooks/stripe
+   ```
+
+Pay with the test card `4242 4242 4242 4242`, any future expiry date and any CVC.
+
+## Tests
 
 ```bash
-stripe listen --forward-to localhost:4000/api/webhooks/stripe
+cd server
+npm test
 ```
 
-## Database
+The API and catalog tests need nothing else. The shop tests run when `TEST_DATABASE_URL` points to a PostgreSQL database whose name ends in `_test`; they wipe and rebuild it, so the name check stops them touching a real database:
 
-Migrations live in `server/db/migrations/` and are applied in filename order by `npm run migrate`, which records each one in `schema_migrations`. To change the schema, add a new numbered `.sql` file — never edit one that has already run.
+```bash
+createdb art_ecommerce_test
+TEST_DATABASE_URL=postgres://user:password@localhost:5432/art_ecommerce_test npm test
+```
+
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) builds the site in both modes and runs every test, with a PostgreSQL service, on each push and pull request.
+
+## Managing content
+
+### Catalog
+
+`server/data/products.json` holds the artwork. Images go in `public/images/products/`. The catalog tests check for unique ids, required fields and missing images.
+
+- **Portfolio mode:** restart the API (or redeploy) after editing the file.
+- **Shop mode:** run `npm run seed` in `server/`. It updates titles, prices, images and so on. `"available": false` marks a piece sold, for example at an exhibition. `"available": true` never revives a piece sold through the site; un-sell those in the database. Products removed from the file are listed as a warning, not deleted.
+
+Each product can have Persian text in `title_fa`, `medium_fa`, `dimensions_fa` and `description_fa`; anything left out falls back to English. Prices are formatted by `PRICE_CURRENCY` in `src/i18n/format.js`. Gallery categories and their order are set by `CATEGORY_META` in `src/components/Shop.jsx`.
+
+### Languages
+
+The site is in English (default) and Persian; visitors switch with the flags in the footer.
+
+- Every component keeps its text in a `COPY = { en: {...}, fa: {...} }` object at the top of the file. Edit both languages together.
+- Use logical Tailwind classes (`ps-`/`pe-`, `ms-`/`me-`, `start-`/`end-`, `text-start`) so layouts mirror correctly, and `rtl:-scale-x-100` on arrow icons.
+- Contact confirmation emails go out in the language the visitor was using.
+
+### Database (shop mode)
+
+Migrations live in `server/commerce/db/migrations/` and run in filename order with `npm run migrate`, which records each in `schema_migrations`. To change the schema, add a new numbered `.sql` file. Never edit one that has already run.
 
 | Table | Purpose |
 |---|---|
-| `products` | Catalog + live availability and checkout reservations |
+| `products` | The catalog, plus live availability and checkout reservations |
 | `orders` | Written by the Stripe webhook after a successful payment |
-| `contact_submissions` | Every contact-form message, with the artwork it was about (if any) |
-
-### Managing the catalog
-
-`public/data/products.json` is the source for catalog details. After editing it, run `npm run seed` in `server/`:
-
-- titles, prices, images, descriptions etc. are updated on existing rows
-- `"available": false` marks a piece sold (e.g. sold at an exhibition)
-- `"available": true` never revives a piece sold through the site — un-sell those in the database
-- products removed from the JSON are listed as a warning, not deleted
-
-Each product can also have Persian text — `title_fa`, `medium_fa` and `dimensions_fa`. Anything left out falls back to English on the Persian site.
-
-Prices are formatted by `PRICE_CURRENCY` in `src/i18n/format.js` (`"USD"` now; set `"TOMAN"` once the catalog has toman prices).
-
-Images go in `public/images/products/`. Gallery categories and their order are set by `CATEGORY_META` in `src/components/Shop.jsx`.
 
 ## Environment variables
 
-**Frontend** (`.env`, see `.env.example`)
+**Frontend** (`.env`, see [.env.example](.env.example))
 
 | Variable | Notes |
 |---|---|
+| `VITE_COMMERCE_ENABLED` | `true` builds the shop; leave blank for the portfolio site |
 | `VITE_API_BASE_URL` | Leave blank when the API is served from the same origin |
 | `VITE_PRODUCTS_ENDPOINT` | Usually `/api/products` |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Only needed in shop mode |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Shop mode only |
 
-**Backend** (`server/.env`, see `server/.env.example`) — database credentials are required; Stripe is optional; SES is required when `NODE_ENV=production`. `TRUST_PROXY` sets how many proxies sit in front of the API (see below).
+**Backend** (`server/.env`, see [server/.env.example](server/.env.example))
+
+| Variable | Notes |
+|---|---|
+| `COMMERCE_ENABLED` | `true` for shop mode |
+| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SES_FROM_ADDRESS`, `SES_OWNER_ADDRESS` | Required when `NODE_ENV=production` |
+| `SES_COPY_ADDRESS` | Optional blind copy of each contact message, as the UK operator's record of consent |
+| `DB_*`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESERVATION_TTL_MINUTES` | Shop mode only |
+| `TRUST_PROXY` | Proxies in front of the API (see below) |
 
 ## Deployment notes
 
-- **SPA fallback** — the host must serve `index.html` for unknown paths so `/shop`, `/about` and `/contact` work on refresh (e.g. CloudFront custom error response 403/404 → `/index.html`, 200).
-- **Docker** — `server/Dockerfile` builds the API image. `.dockerignore` keeps `.env` out of the image; pass secrets as runtime environment variables. Run `npm run migrate` against the production database before starting a new version.
-- **Proxies** — behind a load balancer set `TRUST_PROXY` (ALB only → `1`, CloudFront + ALB → `2`) so rate limits apply per visitor. It defaults to `1` in production.
-- **SES** — the sender address must be verified in SES (and the account out of the SES sandbox to email arbitrary visitors).
-- **Stripe** — register `https://<api-host>/api/webhooks/stripe` for `payment_intent.succeeded`, `payment_intent.payment_failed` and `payment_intent.canceled`.
+- **SPA fallback:** the host must serve `index.html` for unknown paths so `/shop`, `/about` and `/contact` work on refresh (for example a CloudFront custom error response 403/404 → `/index.html`, 200).
+- **Docker:** `server/Dockerfile` builds the API image, including the catalog. `.dockerignore` keeps `.env` out of the image; pass secrets as runtime environment variables. In shop mode, run `npm run migrate` against the production database before starting a new version.
+- **Proxies:** behind a load balancer set `TRUST_PROXY` (ALB only → `1`, CloudFront + ALB → `2`) so rate limits apply per visitor. It defaults to `1` in production.
+- **SES:** the sender address must be verified, and the account out of the SES sandbox, to email arbitrary visitors.
+- **Stripe (shop mode):** register `https://<api-host>/api/webhooks/stripe` for `payment_intent.succeeded`, `payment_intent.payment_failed` and `payment_intent.canceled`.
 
 ## Build
 
