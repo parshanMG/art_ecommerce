@@ -22,9 +22,12 @@ router.post(
       .isString().trim().notEmpty().withMessage("Please enter your name.")
       .isLength({ max: 100 }).withMessage("Name must be 100 characters or fewer.")
       .matches(NAME_PATTERN).withMessage("Name can only contain letters, spaces, apostrophes, hyphens and full stops."),
+    /* Trimmed only — normalizeEmail() would strip dots and +tags from
+       Gmail addresses, so the artist would reply to a different-looking
+       address from the one the visitor typed. */
     body("email")
+      .trim()
       .isEmail().withMessage("Please enter a valid email address.")
-      .normalizeEmail()
       .isLength({ max: 254 }).withMessage("Email must be 254 characters or fewer."),
     body("subject")
       .isString()
