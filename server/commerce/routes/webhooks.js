@@ -1,8 +1,8 @@
 import { Router } from "express";
-import stripe from "../services/stripe.js";
-import pool from "../db/index.js";
+import stripe from "../stripe.js";
+import pool from "../db/pool.js";
 import { releaseReservation } from "../db/reservations.js";
-import { sendOrderConfirmation, sendOrderReviewAlert } from "../services/email.js";
+import { sendOrderConfirmation, sendOrderReviewAlert } from "../emails.js";
 
 const router = Router();
 

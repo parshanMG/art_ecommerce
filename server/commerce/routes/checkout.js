@@ -1,10 +1,10 @@
 import crypto from "crypto";
 import { Router } from "express";
 import { body, param } from "express-validator";
-import { validateRequest, NAME_PATTERN } from "../middleware/validateRequest.js";
-import pool from "../db/index.js";
+import { validateRequest, NAME_PATTERN } from "../../middleware/validateRequest.js";
+import pool from "../db/pool.js";
 import { releaseExpiredReservations, releaseReservation } from "../db/reservations.js";
-import stripe from "../services/stripe.js";
+import stripe from "../stripe.js";
 
 /* ── Country-aware postcode patterns ────────────────────────────────
    Keyed by ISO 3166-1 alpha-2 country code.

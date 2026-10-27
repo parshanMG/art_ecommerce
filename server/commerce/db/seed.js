@@ -23,11 +23,11 @@ import "dotenv/config";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
-import pool from "./index.js";
+import pool from "./pool.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const productsPath = resolve(__dirname, "../../public/data/products.json");
+const productsPath = resolve(__dirname, "../../../public/data/products.json");
 const products = JSON.parse(readFileSync(productsPath, "utf-8"));
 
 async function seed() {

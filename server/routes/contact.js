@@ -2,7 +2,7 @@ import { Router } from "express";
 import { body } from "express-validator";
 import { validateRequest, NAME_PATTERN } from "../middleware/validateRequest.js";
 import { sendContactNotification, sendContactConfirmation } from "../services/email.js";
-import pool from "../db/index.js";
+import pool from "../commerce/db/pool.js";
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import pool from "../db/index.js";
-import { releaseExpiredReservations } from "../db/reservations.js";
+import pool from "../commerce/db/pool.js";
+import { releaseExpiredReservations } from "../commerce/db/reservations.js";
 
 const router = Router();
 

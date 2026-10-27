@@ -6,9 +6,9 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 
 import productsRouter  from "./routes/products.js";
-import checkoutRouter  from "./routes/checkout.js";
+import checkoutRouter  from "./commerce/routes/checkout.js";
 import contactRouter   from "./routes/contact.js";
-import webhooksRouter  from "./routes/webhooks.js";
+import webhooksRouter  from "./commerce/routes/webhooks.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 /* Rate limiters */
