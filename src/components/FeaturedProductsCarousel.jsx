@@ -4,9 +4,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchProducts, getFeaturedProducts } from "../services/productsService";
-import { useCart } from "../context/CartContext";
 import { useCanHover } from "../hooks/useCanHover";
 import { COMMERCE_ENABLED } from "../config/features";
+import { BasketToggle } from "../features/commerce/PurchaseButtons";
 import { useLanguage } from "../i18n/LanguageContext";
 import { formatPrice, formatDigits, productText } from "../i18n/format";
 
@@ -25,8 +25,6 @@ const COPY = {
     size: "Size", medium: "Medium", year: "Year",
     sold: "Sold",
     enquire: "Enquire",
-    addToBasket: "Add to Basket +",
-    added: "Added ✓",
     loadError: "Couldn't load the paintings. Please try again later.",
     empty: "No featured paintings right now.",
   },
@@ -40,8 +38,6 @@ const COPY = {
     size: "اندازه", medium: "تکنیک", year: "سال",
     sold: "فروخته شد",
     enquire: "استعلام",
-    addToBasket: "افزودن به سبد +",
-    added: "افزوده شد ✓",
     loadError: "بارگذاری نقاشی‌ها ممکن نشد. لطفاً بعداً دوباره تلاش کنید.",
     empty: "در حال حاضر اثر منتخبی وجود ندارد.",
   },
@@ -58,7 +54,8 @@ const getPageSize = () => {
 /* ─────────────────────────────────────────────────────────────────────
    FEATURED PRODUCTS CAROUSEL
    Displays products that have featured:true in products.json.
-   Cards flip on hover to reveal details + an add/remove basket button.
+   Cards flip on hover to reveal details and an Enquire button (plus a
+   basket button in shop mode).
    Touch screens can't hover, so there a tap flips the card instead;
    keyboard focus on a button on the back flips it too.
 
@@ -67,9 +64,8 @@ const getPageSize = () => {
      • Arrow buttons cycle through pages
      • Dot indicators jump to a specific page
 
-   Cart integration:
-     • "Add to Basket +" adds to CartContext and turns the button burgundy
-     • Clicking "Added ✓" removes the item from the cart
+   Shop mode adds a basket toggle — see
+   src/features/commerce/PurchaseButtons.jsx
 ───────────────────────────────────────────────────────────────────── */
 export default function FeaturedProductsCarousel() {
   const [products, setProducts]   = useState([]);
@@ -80,12 +76,6 @@ export default function FeaturedProductsCarousel() {
   const canHover = useCanHover();
   const { lang, isRtl } = useLanguage();
   const c = COPY[lang];
-
-  // Cart actions and state from CartContext
-  const { addToCart, removeFromCart, cartItems } = useCart();
-
-  // Helper to check if a product is already in the cart
-  const isInCart = (productId) => cartItems.some((item) => item.id === productId);
 
   // Taps on the card's own links/buttons do their job without flipping it
   const handleTap = (e, productId) => {
@@ -318,19 +308,8 @@ export default function FeaturedProductsCarousel() {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          {/* Add / Remove basket toggle button */}
-                          {COMMERCE_ENABLED && (product.available ? (
-                            <button
-                              onClick={() => isInCart(product.id) ? removeFromCart(product.id) : addToCart(product)}
-                              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition bg-[#D98C7A] hover:bg-[#bf7360] text-white"
-                            >
-                              {isInCart(product.id) ? c.added : c.addToBasket}
-                            </button>
-                          ) : (
-                            <div className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center bg-[#E8DCD0] text-[#A89E94] cursor-default">
-                              {c.sold}
-                            </div>
-                          ))}
+                          {/* Add / Remove basket toggle — shop mode only */}
+                          {COMMERCE_ENABLED && <BasketToggle product={product} />}
                           {/* Enquire button — always visible */}
                           <Link
                             to={`/contact?product=${product.id}`}

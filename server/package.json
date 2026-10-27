@@ -7,8 +7,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "migrate": "node db/migrate.js",
-    "seed": "node db/seed.js"
+    "migrate": "node commerce/db/migrate.js",
+    "seed": "node commerce/db/seed.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.0.0",

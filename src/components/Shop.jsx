@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchProducts } from "../services/productsService";
 import ArtworkModal from "./ArtworkModal";
-import { useCart } from "../context/CartContext";
+import { BuyButtons } from "../features/commerce/PurchaseButtons";
 import { useInView } from "../hooks/useInView";
 import { useCanHover } from "../hooks/useCanHover";
 import { COMMERCE_ENABLED } from "../config/features";
@@ -37,9 +37,6 @@ const COPY = {
     size: "Size",
     type: "Type",
     soldNote: "This piece has been sold",
-    buyNow: "Buy Now",
-    addToBasket: "Add to Basket +",
-    added: "Added ✓",
     enquire: "Enquire",
     view: (title) => `View ${title}`,
     loadError: "Couldn't load the gallery. Please try again later.",
@@ -54,9 +51,6 @@ const COPY = {
     size: "اندازه",
     type: "تکنیک",
     soldNote: "این اثر فروخته شده است",
-    buyNow: "خرید",
-    addToBasket: "افزودن به سبد +",
-    added: "افزوده شد ✓",
     enquire: "استعلام",
     view: (title) => `مشاهده ${title}`,
     loadError: "بارگذاری گالری ممکن نشد. لطفاً بعداً دوباره تلاش کنید.",
@@ -90,13 +84,10 @@ function SkeletonCard() {
      onOpen  — called with the product id to open the viewer
 ───────────────────────────────────────────────────────────────────── */
 function ProductCard({ product, index = 0, onOpen }) {
-  const { addToCart, removeFromCart, cartItems } = useCart();
-  const navigate = useNavigate();
   const canHover = useCanHover();
   const { lang } = useLanguage();
   const c = COPY[lang];
   const title = productText(product, "title", lang);
-  const inCart = cartItems.some((item) => item.id === product.id);
   const isSold = !product.available;
   const [ref, isVisible] = useInView({ threshold: 0.1 });
   // Cap delay at 400 ms so late cards don't wait too long
@@ -169,40 +160,15 @@ function ProductCard({ product, index = 0, onOpen }) {
           </div>
 
           {/* ── Action buttons ──────────────────────────────────────
-              Buy Now     — placeholder, wire up to checkout later
-              Add/Remove  — toggles the item in/out of the cart;
-                            turns burgundy and shows "Added ✓" when in cart
-              Enquire     — links to the enquiry form with product id
+              Buy / basket — shop mode only, see
+                             src/features/commerce/PurchaseButtons.jsx
+              Enquire      — links to the enquiry form with product id
           ─────────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-2">
             {isSold ? (
               <span className="text-white/70 text-sm italic">{c.soldNote}</span>
             ) : (
-              COMMERCE_ENABLED && (
-                <>
-                  <button
-                    onClick={() => { addToCart(product); navigate("/checkout"); }}
-                    disabled={inCart}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                      inCart
-                        ? "bg-[#A89E94] text-white cursor-not-allowed opacity-60"
-                        : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                    }`}
-                  >
-                    {c.buyNow}
-                  </button>
-                  <button
-                    onClick={() => inCart ? removeFromCart(product.id) : addToCart(product)}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                      inCart
-                        ? "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                        : "bg-[#D98C7A] text-white hover:bg-[#bf7360]"
-                    }`}
-                  >
-                    {inCart ? c.added : c.addToBasket}
-                  </button>
-                </>
-              )
+              COMMERCE_ENABLED && <BuyButtons product={product} />
             )}
             <Link
               to={`/contact?product=${product.id}`}

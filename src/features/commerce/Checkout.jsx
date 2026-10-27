@@ -7,8 +7,8 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { useCart } from "../context/CartContext";
-import { apiUrl } from "../services/api";
+import { useCart } from "./CartContext";
+import { apiUrl } from "../../services/api";
 
 /* Stripe instance — created once outside the component so it is never
    recreated on re-renders. The publishable key is safe to expose here. */
@@ -17,7 +17,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 /* ── Supported shipping countries ───────────────────────────────────────────
    code = ISO 3166-1 alpha-2 (must match POSTCODE_PATTERNS in checkout.js).
    To add a new country: append one line here and add its pattern in
-   server/routes/checkout.js → POSTCODE_PATTERNS.
+   server/commerce/routes/checkout.js → POSTCODE_PATTERNS.
 ────────────────────────────────────────────────────────────────── */
 const COUNTRIES = [
   { code: "GB", label: "United Kingdom" },

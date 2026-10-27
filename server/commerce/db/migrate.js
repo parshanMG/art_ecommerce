@@ -14,7 +14,7 @@ import "dotenv/config";
 import { readdirSync, readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
-import pool from "./index.js";
+import pool from "./pool.js";
 
 const migrationsDir = resolve(dirname(fileURLToPath(import.meta.url)), "migrations");
 
