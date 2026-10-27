@@ -3,7 +3,8 @@ import { Router } from "express";
 import { body, param } from "express-validator";
 import { validateRequest, NAME_PATTERN } from "../../middleware/validateRequest.js";
 import pool from "../db/pool.js";
-import { releaseExpiredReservations, releaseReservation } from "../db/reservations.js";
+import { releaseReservation } from "../db/reservations.js";
+import { reserveItems } from "../orders.js";
 import stripe from "../stripe.js";
 
 /* ── Country-aware postcode patterns ────────────────────────────────
@@ -74,67 +75,6 @@ async function cancelPreviousAttempt(clientSecret) {
   }
 
   await releaseReservation(pool, paymentIntent.metadata.reservationId);
-}
-
-function unavailableResponse(items) {
-  const titles = items.map((r) => `“${r.title}”`).join(", ");
-  return {
-    error: `Sorry — ${titles} ${items.length === 1 ? "is" : "are"} no longer available.`,
-    unavailableIds: items.map((r) => r.id),
-  };
-}
-
-/* Locks the requested rows, checks every item can be sold, and holds
-   them for reservationId (restarting the reservation clock). Items
-   already held by the same reservationId pass, so this both creates
-   and refreshes a hold.
-   Returns { rows } on success, or { status, body } to refuse with. */
-async function reserveItems(itemIds, reservationId) {
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
-    /* Release stale reservations before checking current availability. */
-    await releaseExpiredReservations(client);
-
-    /* Lock rows to prevent concurrent reservations */
-    const { rows } = await client.query(
-      `SELECT id, title, price, available, reserved, reservation_id
-       FROM products
-       WHERE id = ANY($1::text[])
-       FOR UPDATE`,
-      [itemIds]
-    );
-
-    if (rows.length !== itemIds.length) {
-      await client.query("ROLLBACK");
-      return { status: 404, body: { error: "One or more items not found." } };
-    }
-
-    const unavailable = rows.filter(
-      (r) => !r.available || (r.reserved && r.reservation_id !== reservationId)
-    );
-    if (unavailable.length > 0) {
-      await client.query("ROLLBACK");
-      return { status: 409, body: unavailableResponse(unavailable) };
-    }
-
-    await client.query(
-      `UPDATE products
-       SET reserved = TRUE, reserved_at = NOW(), reservation_id = $2
-       WHERE id = ANY($1::text[])`,
-      [itemIds, reservationId]
-    );
-
-    await client.query("COMMIT");
-    return { rows };
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
 }
 
 const router = Router();
@@ -233,7 +173,7 @@ router.post(
       }
 
       const reservationId = crypto.randomUUID();
-      const result = await reserveItems(itemIds, reservationId);
+      const result = await reserveItems(pool, itemIds, reservationId);
       if (result.status) {
         return res.status(result.status).json(result.body);
       }
@@ -297,7 +237,7 @@ router.post(
       }
 
       const itemIds = paymentIntent.metadata.itemIds.split(",");
-      const result = await reserveItems(itemIds, reservationId);
+      const result = await reserveItems(pool, itemIds, reservationId);
       if (result.status) {
         await stripe.paymentIntents.cancel(paymentIntent.id).catch(() => {});
         return res.status(result.status).json(result.body);
