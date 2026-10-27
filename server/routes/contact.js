@@ -2,7 +2,7 @@ import { Router } from "express";
 import { body } from "express-validator";
 import { validateRequest, NAME_PATTERN } from "../middleware/validateRequest.js";
 import { sendContactNotification, sendContactConfirmation } from "../services/email.js";
-import pool from "../commerce/db/pool.js";
+import { findCatalogProduct } from "../catalog.js";
 
 const router = Router();
 
@@ -59,11 +59,7 @@ router.post(
 
       /* Look the artwork up rather than trusting a client-supplied title.
          An unknown id is ignored — the message itself still goes through. */
-      let product = null;
-      if (productId) {
-        const { rows } = await pool.query(`SELECT id, title, title_fa FROM products WHERE id = $1`, [productId]);
-        product = rows[0] ?? null;
-      }
+      const product = productId ? findCatalogProduct(productId) : null;
 
       const contact = { name, email, subject, message, product, lang, consentAt: new Date() };
 

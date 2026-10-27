@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────────────
    SEED SCRIPT
-   Syncs products from public/data/products.json into the products
+   Syncs products from server/data/products.json into the products
    table in PostgreSQL.
 
    Run after migrations, and again whenever products.json changes:
@@ -27,7 +27,7 @@ import pool from "./pool.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const productsPath = resolve(__dirname, "../../../public/data/products.json");
+const productsPath = resolve(__dirname, "../../data/products.json");
 const products = JSON.parse(readFileSync(productsPath, "utf-8"));
 
 async function seed() {

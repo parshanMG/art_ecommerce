@@ -1,26 +1,19 @@
 import { Router } from "express";
-import pool from "../commerce/db/pool.js";
-import { releaseExpiredReservations } from "../commerce/db/reservations.js";
-
-const router = Router();
 
 /* GET /api/products
-   Returns all products with their live availability status. */
-router.get("/", async (req, res, next) => {
-  try {
-    await releaseExpiredReservations(pool);
+   Returns every product with its availability. Where the list comes
+   from depends on the mode (see index.js): the catalog file in
+   portfolio mode, the database — with live reservations — in shop mode. */
+export default function createProductsRouter(listProducts) {
+  const router = Router();
 
-    const { rows } = await pool.query(
-      `SELECT id, title, price, category, medium, dimensions,
-              year, available, featured, image, thumbnail, description,
-              title_fa, medium_fa, dimensions_fa, description_fa
-       FROM products
-       ORDER BY year DESC, title ASC`
-    );
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-});
+  router.get("/", async (_req, res, next) => {
+    try {
+      res.json(await listProducts());
+    } catch (err) {
+      next(err);
+    }
+  });
 
-export default router;
+  return router;
+}
