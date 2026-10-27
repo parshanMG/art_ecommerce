@@ -1,5 +1,4 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
-import { COMMERCE_ENABLED } from "../config/features";
 
 /* ─────────────────────────────────────────────────────────────────────
    ACTION TYPES
@@ -62,13 +61,13 @@ function cartReducer(state, action) {
    Reads the saved cart from localStorage on first load so the cart
    survives a page refresh. Falls back to an empty array on any error.
 
-   Storage is only used while the shop is on. Saving the basket counts as
-   "strictly necessary" under the cookie rules (PECR / ePrivacy) only when
-   there is a basket to save — in portfolio mode nothing is written to the
-   visitor's device, so no consent banner is needed.
+   Storage is only used while the shop is on: App.jsx mounts CartProvider
+   in shop mode only. Saving the basket counts as "strictly necessary"
+   under the cookie rules (PECR / ePrivacy) only when there is a basket to
+   save — in portfolio mode nothing is written to the visitor's device,
+   so no consent banner is needed.
 ───────────────────────────────────────────────────────────────────── */
 function loadCartFromStorage() {
-  if (!COMMERCE_ENABLED) return [];
   try {
     const saved = localStorage.getItem("cartItems");
     if (!saved) return [];
@@ -92,7 +91,6 @@ export function CartProvider({ children }) {
 
   // Sync cart to localStorage every time it changes
   useEffect(() => {
-    if (!COMMERCE_ENABLED) return;
     try {
       localStorage.setItem("cartItems", JSON.stringify(cartItems));
     } catch {

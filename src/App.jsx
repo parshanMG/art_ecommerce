@@ -2,7 +2,7 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { Routes, Route, useLocation } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
+import { Fragment, lazy, Suspense, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
 import FeaturedProductsCarousel from "./components/FeaturedProductsCarousel";
@@ -11,12 +11,16 @@ import Contact from "./components/Contact";
 import AboutArtist from "./components/AboutArtist";
 import About from "./components/About";
 import Privacy from "./components/Privacy";
-import { CartProvider } from "./context/CartContext";
+import { CartProvider } from "./features/commerce/CartContext";
 import Footer from "./components/Footer";
 import { COMMERCE_ENABLED } from "./config/features";
 
-// Loaded on demand so Stripe.js is only downloaded when someone opens checkout
-const Checkout = lazy(() => import("./components/Checkout"));
+// Loaded on demand so Stripe.js is only downloaded when someone opens
+// checkout — and in portfolio mode it isn't built at all
+const Checkout = COMMERCE_ENABLED ? lazy(() => import("./features/commerce/Checkout")) : null;
+
+// The cart only exists in shop mode
+const ShopProvider = COMMERCE_ENABLED ? CartProvider : Fragment;
 
 /* ─────────────────────────────────────────────────────────────────────
    PAGE TRANSITION
@@ -103,12 +107,13 @@ function HomePage() {
 
 /* ─────────────────────────────────────────────────────────────────────
    APP (ROOT)
-   CartProvider wraps everything so Navbar, Gallery, and the Carousel
-   all share the same cart state. Add new routes inside <Routes>.
+   In shop mode CartProvider wraps everything so Navbar, Gallery, and
+   the Carousel all share the same cart state. Add new routes inside
+   <Routes>.
 ───────────────────────────────────────────────────────────────────── */
 export default function App() {
   return (
-    <CartProvider>
+    <ShopProvider>
       <Navbar />
       <Routes>
         {/* Home page */}
@@ -121,10 +126,10 @@ export default function App() {
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         {/* Privacy policy — keep in sync with what the site collects */}
         <Route path="/privacy" element={<PageTransition><Privacy /></PageTransition>} />
-        {/* Checkout — only active when COMMERCE_ENABLED = true in src/config/features.js */}
+        {/* Checkout — shop mode only (VITE_COMMERCE_ENABLED, see src/config/features.js) */}
         {COMMERCE_ENABLED && <Route path="/checkout" element={<PageTransition><Suspense fallback={null}><Checkout /></Suspense></PageTransition>} />}
       </Routes>
       <Footer />
-    </CartProvider>
+    </ShopProvider>
   );
 }

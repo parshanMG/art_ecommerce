@@ -2,9 +2,9 @@
    IMPORTS
 ───────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
-import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { NavLink, useLocation } from "react-router-dom";
 import { COMMERCE_ENABLED } from "../config/features";
+import CartMenu from "../features/commerce/CartMenu";
 import { useLanguage } from "../i18n/LanguageContext";
 
 /* ── Text in each language ───────────────────────────────────────── */
@@ -13,17 +13,11 @@ const COPY = {
     brand: "Maryam Mohseni",
     home: "Home", gallery: "Gallery", about: "About", contact: "Contact",
     openMenu: "Open menu", closeMenu: "Close menu",
-    openCart: "Open cart", closeCart: "Close cart", myCart: "My Cart",
-    emptyCart: "Your cart is empty.", qty: "Qty", subtotal: "Subtotal", checkout: "Checkout",
-    remove: (title) => `Remove ${title} from cart`,
   },
   fa: {
     brand: "مریم محسنی",
     home: "خانه", gallery: "گالری", about: "درباره", contact: "تماس",
     openMenu: "باز کردن منو", closeMenu: "بستن منو",
-    openCart: "باز کردن سبد خرید", closeCart: "بستن سبد خرید", myCart: "سبد خرید",
-    emptyCart: "سبد خرید شما خالی است.", qty: "تعداد", subtotal: "جمع", checkout: "تسویه حساب",
-    remove: (title) => `حذف ${title} از سبد`,
   },
 };
 
@@ -32,13 +26,12 @@ const COPY = {
    Fixed to the top of every page (z-40). Contains:
      • Logo + site name (left)
      • Nav links — Home, Gallery, About, Contact (centre)
-     • Cart icon with badge + cart dropdown (right)
-     • Hamburger toggle for mobile (right)
+     • Instagram link, cart menu (shop mode only) and the mobile
+       hamburger toggle (right)
 
-   Cart state comes from CartContext — no local cart state here.
+   The cart icon and dropdown live in src/features/commerce/CartMenu.jsx.
 ───────────────────────────────────────────────────────────────────── */
 export default function Navbar() {
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -47,17 +40,12 @@ export default function Navbar() {
   // Navbar is transparent only on the home page when not scrolled
   const isTransparent = isHome && !isScrolled;
 
-  const navigate = useNavigate();
   const { lang } = useLanguage();
   const c = COPY[lang];
-
-  // Pull cart data and actions from the global CartContext
-  const { cartItems, cartCount, subtotal, removeFromCart } = useCart();
 
   // Close mobile menu on navigation
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    setIsCartOpen(false);
   }, [pathname]);
 
   /* ── Scroll listener ──────────────────────────────────────────────
@@ -71,18 +59,6 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  /* ── Handlers ── */
-  const handleCartToggle = () => {
-    setIsCartOpen((prev) => !prev);
-  };
-
-  // Close the cart dropdown and navigate to the checkout page
-  const handleCheckout = () => {
-    if (!cartItems.length) return;
-    setIsCartOpen(false);
-    navigate("/checkout");
-  };
 
   return (
     <>
@@ -155,133 +131,8 @@ export default function Navbar() {
             </svg>
           </a>
 
-          {/* ── Cart Icon Button ───────────────────────────────────
-              Hidden when COMMERCE_ENABLED is false (portfolio mode).
-              To re-enable, set COMMERCE_ENABLED = true in
-              src/config/features.js
-          ───────────────────────────────────────────────────────── */}
-          {COMMERCE_ENABLED && <>
-          <button
-            type="button"
-            onClick={handleCartToggle}
-            className={`relative inline-flex items-center justify-center p-2 w-10 h-10 rounded-lg focus:outline-none transition-colors ${
-              isCartOpen
-                ? "text-[#D98C7A]"
-                : isTransparent
-                  ? "text-white hover:text-[#D98C7A]"
-                  : "text-[#2F2A26] hover:text-[#D98C7A]"
-            }`}
-            aria-label={c.openCart}
-            aria-expanded={isCartOpen}
-            aria-controls="shopping-cart-dropdown"
-          >
-            {/* Material Design shopping-cart SVG — currentColor inherits the button text colour */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-6 h-6"
-              aria-hidden="true"
-            >
-              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.17 14l.03-.12.9-1.63A1 1 0 0 1 9 12h8a1 1 0 0 0 .93-.63l2.05-4.68A1 1 0 0 0 19.05 5H5.21L4.27 3H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7.42a.25.25 0 0 1-.25-.25z"/>
-            </svg>
-            {/* Badge — change bg-[#D98C7A] to any colour to retheme the counter dot */}
-            {cartCount > 0 && (
-              <span className="absolute -top-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D98C7A] text-[10px] font-semibold text-white">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-            )}
-          </button>
-
-          {/* ── Cart Dropdown ──────────────────────────────────────
-              Slides in below the cart icon. Visibility toggled by
-              isCartOpen. Clicking the backdrop overlay (below) also
-              closes it.
-
-              To change the dropdown width, adjust w-[26rem].
-              To change how many items show before scrolling, adjust max-h-96.
-          ───────────────────────────────────────────────────────── */}
-          <div
-            id="shopping-cart-dropdown"
-            className={`absolute end-0 top-full mt-3 w-[26rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-[#E8DCD0] bg-[#F6F1EB] p-4 shadow-2xl transition-all duration-200 ${
-              isCartOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-2 opacity-0"
-            }`}
-            aria-hidden={!isCartOpen}
-          >
-            {/* Dropdown header */}
-            <div className="flex items-center justify-between border-b pb-3">
-              <h2 className="text-lg font-semibold text-[#2F2A26]">{c.myCart}</h2>
-              <button
-                type="button"
-                onClick={handleCartToggle}
-                className="text-gray-500 hover:text-black"
-                aria-label={c.closeCart}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* ── Cart Items List ──────────────────────────────────
-                Scrollable list of cart items.
-                Each row: thumbnail | title + medium + qty + price | remove ✕
-            ─────────────────────────────────────────────────── */}
-            <div className="max-h-96 overflow-y-auto py-4">
-              {!cartItems.length ? (
-                <p className="text-sm text-gray-600">{c.emptyCart}</p>
-              ) : (
-                <ul className="space-y-3">
-                  {cartItems.map((item) => (
-                    <li key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3">
-                      {/* Product thumbnail */}
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
-                      />
-                      {/* Product details */}
-                      <div className="flex flex-1 flex-col gap-1 min-w-0">
-                        <p className="truncate font-medium text-sm text-[#2F2A26]">{item.title}</p>
-                        <p className="text-xs text-gray-500">{item.medium}</p>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">{c.qty}: {item.quantity}</span>
-                          <span className="font-semibold text-[#2F2A26]">${Number(item.price || 0).toFixed(2)}</span>
-                        </div>
-                      </div>
-                      {/* Remove item button */}
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item.id)}
-                        className="shrink-0 self-start text-gray-400 hover:text-red-500 text-xs"
-                        aria-label={c.remove(item.title)}
-                      >
-                        ✕
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* ── Subtotal + Checkout ─────────────────────────────
-                Checkout button is disabled when the cart is empty.
-                Replace handleCheckout with real checkout logic later.
-            ─────────────────────────────────────────────────── */}
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{c.subtotal}</span>
-                <span className="font-semibold text-[#2F2A26]">${subtotal.toFixed(2)}</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCheckout}
-                disabled={!cartItems.length}
-                className="w-full rounded-xl bg-[#D98C7A] py-3 text-white transition hover:bg-[#bf7360] disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                {c.checkout}
-              </button>
-            </div>
-          </div>
-          </>}
+          {/* ── Cart menu — shop mode only (src/features/commerce/CartMenu.jsx) ── */}
+          {COMMERCE_ENABLED && <CartMenu isTransparent={isTransparent} />}
 
           {/* ── Hamburger / Close (mobile only) ───────────────── */}
           <button
@@ -360,18 +211,7 @@ export default function Navbar() {
         </ul>
       </div>
 
-      {/* ── Backdrop overlay ─────────────────────────────────────────
-          Transparent full-screen button that closes the cart dropdown
-          when the user clicks anywhere outside of it.
-      ─────────────────────────────────────────────────────────────── */}
-      {COMMERCE_ENABLED && isCartOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-transparent"
-          aria-label={c.closeCart}
-          onClick={handleCartToggle}
-        />
-      )}
+      {/* ── Backdrop: closes the mobile menu on a click outside it ── */}
       {isMobileMenuOpen && (
         <button
           type="button"

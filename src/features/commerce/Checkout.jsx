@@ -7,8 +7,8 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { useCart } from "../context/CartContext";
-import { apiUrl } from "../services/api";
+import { useCart } from "./CartContext";
+import { apiUrl } from "../../services/api";
 
 /* Stripe instance — created once outside the component so it is never
    recreated on re-renders. The publishable key is safe to expose here. */
