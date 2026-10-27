@@ -105,6 +105,7 @@ export default function HeroBanner() {
   const [active, setActive]       = useState(0);
   const [textVisible, setTextVisible] = useState(false); // controls text slide-up
   const hoverTimer = useRef(null);
+  const imgRefs    = useRef([]);
   const { lang } = useLanguage();
   const overlay = OVERLAY_COPY[lang];
 
@@ -121,6 +122,17 @@ export default function HeroBanner() {
     );
     return () => clearInterval(id); // cleanup on unmount
   }, []);
+
+  /* ── Restart the Ken Burns move each time a slide comes into view ──
+     The outgoing slide is left alone so it keeps moving while it fades
+     out, then holds its last frame until it's shown again.
+  ─────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    imgRefs.current[active]?.getAnimations().forEach((animation) => {
+      animation.currentTime = 0;
+      animation.play();
+    });
+  }, [active]);
 
   /* ── Hover handlers ──────────────────────────────────────────────
      onMouseEnter: starts a timer; text appears after HOVER_DELAY_MS.
@@ -140,9 +152,9 @@ export default function HeroBanner() {
           Injected as a <style> tag so these complex animations don't
           need Tailwind config changes.
 
-          All three run for exactly SLIDE_DURATION_S seconds with
-          infinite repeat, so they always restart from their 0%
-          state the moment their slide comes back into view.
+          Each runs once, for SLIDE_DURATION_S + CROSSFADE_S seconds
+          — the time its slide is on screen including the fade-out —
+          and is restarted from 0% when the slide comes back into view.
 
           To tweak zoom: change the scale() numbers.
           To tweak pan:  change the translate / translateX values.
@@ -223,19 +235,20 @@ export default function HeroBanner() {
           >
             {/* ── Product image ──────────────────────────────────────
                 object-cover fills the container without distortion.
-                The Ken Burns animation runs for SLIDE_DURATION_S so
-                it always resets to its 0% state when the slide cycles
-                back into view (SLIDE_DURATION_S × SLIDES.length = one
-                full rotation = exactly n Ken Burns iterations).
+                The Ken Burns animation lasts until the slide has fully
+                faded out, then holds its last frame ("both"), so it
+                never jumps back to the start while still visible.
+                The effect above restarts it when the slide returns.
                 transformOrigin: center keeps zooming centred on the
                 middle of the image.
             ─────────────────────────────────────────────────────── */}
             <img
+              ref={(el) => { imgRefs.current[i] = el; }}
               src={slide.src}
               alt={slide.alt}
               className="absolute inset-0 h-full w-full object-cover"
               style={{
-                animation:       `${slide.anim} ${SLIDE_DURATION_S}s ease-in-out infinite`,
+                animation:       `${slide.anim} ${SLIDE_DURATION_S + CROSSFADE_S}s ease-in-out both`,
                 transformOrigin: "center center",
               }}
               loading={i === 0 ? "eager" : "lazy"}
