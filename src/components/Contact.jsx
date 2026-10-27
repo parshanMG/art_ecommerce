@@ -180,6 +180,9 @@ export default function Contact() {
 
   /* ── Auto-scroll & pre-fill when arriving from an Enquire button ── */
   useEffect(() => {
+    // The page stays mounted when only ?product changes (e.g. the Contact
+    // nav link from /contact?product=x), so drop the previous artwork first
+    setProduct(null);
     const productId = new URLSearchParams(location.search).get("product");
     if (!productId) return;
 
