@@ -10,8 +10,6 @@ import checkoutRouter  from "./routes/checkout.js";
 import contactRouter   from "./routes/contact.js";
 import webhooksRouter  from "./routes/webhooks.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import pool from "./db/index.js";
-import { scheduleRetention } from "./db/retention.js";
 
 /* Rate limiters */
 const contactLimiter = rateLimit({
@@ -152,7 +150,6 @@ app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
   console.log(`[boot ${BOOT_ID}] Server running on port ${PORT} (pid ${process.pid})`);
-  scheduleRetention(pool);
 });
 
 server.on("error", (err) => {

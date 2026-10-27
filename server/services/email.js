@@ -79,7 +79,7 @@ function formatShippingAddress(address) {
 /* Low-level helper — send a plain-text + HTML email via SES.
    All higher-level email functions (contact notification,
    order confirmation, etc.) call this. */
-export async function sendEmail({ to, subject, text, html, replyTo }) {
+export async function sendEmail({ to, subject, text, html, replyTo, bcc }) {
   const ses = getSES();
   const source = process.env.SES_FROM_ADDRESS?.trim();
 
@@ -118,17 +118,28 @@ export async function sendEmail({ to, subject, text, html, replyTo }) {
     params.ReplyToAddresses = replyTo;
   }
 
+  if (bcc?.length) {
+    params.Destination.BccAddresses = bcc;
+  }
+
   const command = new SendEmailCommand(params);
   await ses.send(command);
 }
 
-/* Sends the contact form message to the site owner */
-export async function sendContactNotification({ name, email, subject, message, product, lang = "en" }) {
+/* Sends the contact form message to the artist (SES_OWNER_ADDRESS).
+   It states when the visitor consented to the message being sent to Iran
+   — nothing else records that, since messages aren't stored.
+   SES_COPY_ADDRESS (optional) gets a blind copy: set it to an inbox the
+   UK operator controls so the controller keeps that record too. */
+export async function sendContactNotification({ name, email, subject, message, product, lang = "en", consentAt }) {
   const ownerEmail = process.env.SES_OWNER_ADDRESS?.trim();
+  const copyEmail = process.env.SES_COPY_ADDRESS?.trim();
 
   if (!ownerEmail) {
     throw new Error("SES_OWNER_ADDRESS is not configured.");
   }
+
+  const consentLine = `Consent to send to the artist in Iran: given ${consentAt.toISOString()} (UK GDPR Art. 49(1)(a))`;
 
   const emailSubject = `New contact enquiry: ${subject}${product ? ` — ${product.title}` : ""}`;
   const emailText = [
@@ -139,6 +150,7 @@ export async function sendContactNotification({ name, email, subject, message, p
     `Subject: ${subject}`,
     ...(product ? [`Artwork: ${product.title} (${product.id})`] : []),
     `Language: ${LANGUAGE_NAMES[lang]}`,
+    consentLine,
     "",
     "Message:",
     message,
@@ -153,6 +165,7 @@ export async function sendContactNotification({ name, email, subject, message, p
       <p style="margin:0 0 18px;"><strong>Subject:</strong> ${escapeHtml(subject)}</p>
       ${product ? `<p style="margin:0 0 18px;"><strong>Artwork:</strong> ${escapeHtml(product.title)} <span style="color:#7b726a;">(${escapeHtml(product.id)})</span></p>` : ""}
       <p style="margin:0 0 18px;"><strong>Language:</strong> ${LANGUAGE_NAMES[lang]}</p>
+      <p style="margin:0 0 18px;font-size:13px;color:#7b726a;">${escapeHtml(consentLine)}</p>
       <div style="padding:18px 20px;border:1px solid ${BRAND_BORDER};border-radius:16px;background:${BRAND_SURFACE};">
         <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">Message</p>
         <p dir="auto" style="margin:0;white-space:normal;">${nl2br(message)}</p>
@@ -166,6 +179,7 @@ export async function sendContactNotification({ name, email, subject, message, p
     text: emailText,
     html: emailHtml,
     replyTo: [email],
+    bcc: copyEmail ? [copyEmail] : undefined,
   });
 }
 
