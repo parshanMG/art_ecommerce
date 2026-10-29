@@ -47,7 +47,7 @@ router.post("/", async (req, res, next) => {
 });
 
 /* Emails the buyer, or alerts the owner when part of the order had
-   already been sold. Non-fatal if SES is unreachable. */
+   already been sold. Non-fatal if the email provider is unreachable. */
 function sendOrderEmails(pi, order) {
   const { buyerName, buyerEmail, items, total, shippingAddress } = order;
 

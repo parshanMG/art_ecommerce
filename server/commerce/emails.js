@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────────────
    ORDER EMAILS (shop mode only)
-   Sent by the Stripe webhook. Built from the same layout and SES sender
+   Sent by the Stripe webhook. Built from the same layout and sender
    as the contact emails in services/email.js.
 ───────────────────────────────────────────────────────────────────── */
 import {
@@ -105,10 +105,10 @@ export async function sendOrderReviewAlert({
   conflictingItems,
   orderReference,
 }) {
-  const ownerEmail = process.env.SES_OWNER_ADDRESS?.trim();
+  const ownerEmail = process.env.EMAIL_OWNER_ADDRESS?.trim();
 
   if (!ownerEmail) {
-    throw new Error("SES_OWNER_ADDRESS is not configured.");
+    throw new Error("EMAIL_OWNER_ADDRESS is not configured.");
   }
 
   const titles = conflictingItems.map((item) => item.title);

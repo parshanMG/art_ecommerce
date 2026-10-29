@@ -5,9 +5,9 @@ import { sendContactNotification, sendContactConfirmation } from "../services/em
 import { findCatalogProduct } from "../catalog.js";
 
 /* POST /api/contact
-   Emails the message to the artist via SES, then sends the visitor a
+   Emails the message to the artist via Resend, then sends the visitor a
    confirmation. Nothing is stored: the notification email (and the
-   optional SES_COPY_ADDRESS copy) is the record, including when consent
+   optional EMAIL_COPY_ADDRESS copy) is the record, including when consent
    was given. If the artist's email can't be sent the visitor gets an
    error, so they know to try again.
    productId (optional) links the enquiry to an artwork — set when the

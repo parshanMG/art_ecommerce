@@ -1,6 +1,6 @@
 /* The API in portfolio mode: products from the catalog file, the contact
    form, and checkout switched off. Email sending is replaced by fakes,
-   so no AWS account is needed. */
+   so no Resend account is needed. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createApp } from "../app.js";
@@ -14,7 +14,7 @@ function fakeSender({ fail = false } = {}) {
   const calls = [];
   const send = async (contact) => {
     calls.push(contact);
-    if (fail) throw new Error("SES is down");
+    if (fail) throw new Error("Email provider is down");
   };
   send.calls = calls;
   return send;
