@@ -168,8 +168,6 @@ const CONFIRMATION_COPY = {
     replySoon: "A reply will follow as soon as possible.",
     subjectLabel: "Subject",
     artworkLabel: "Artwork",
-    messageLabel: "Your message",
-    messageCopyLabel: "Message copy:",
     signOff: "Best regards,",
     footer: "If you need to add anything else, simply reply to this email.",
     subjects: {},
@@ -187,8 +185,6 @@ const CONFIRMATION_COPY = {
     replySoon: "به‌زودی پاسخ داده خواهد شد.",
     subjectLabel: "موضوع",
     artworkLabel: "اثر",
-    messageLabel: "پیام شما",
-    messageCopyLabel: "رونوشت پیام:",
     signOff: "با احترام،",
     footer: "اگر نکته دیگری دارید، کافی است به همین ایمیل پاسخ دهید.",
     subjects: {
@@ -203,8 +199,12 @@ const CONFIRMATION_COPY = {
 };
 
 /* Sends an acknowledgement back to the person who submitted the form,
-   in the language they were using on the site */
-export async function sendContactConfirmation({ name, email, subject, message, product, lang = "en" }) {
+   in the language they were using on the site.
+   It deliberately doesn't repeat the message: the email provider keeps
+   a copy of every email it sends, so leaving the text out means only the
+   artist's notification holds it. It also gives spammers nothing to
+   gain from typing someone else's address into the form. */
+export async function sendContactConfirmation({ name, email, subject, product, lang = "en" }) {
   const c = CONFIRMATION_COPY[lang] ?? CONFIRMATION_COPY.en;
   const subjectLabel = c.subjects[subject] ?? subject;
   const productTitle = product ? c.productTitle(product) : null;
@@ -216,9 +216,6 @@ export async function sendContactConfirmation({ name, email, subject, message, p
     "",
     `${c.subjectLabel}: ${subjectLabel}`,
     ...(productTitle ? [`${c.artworkLabel}: ${productTitle}`] : []),
-    "",
-    c.messageCopyLabel,
-    message,
     "",
     c.signOff,
     c.brand,
@@ -232,11 +229,9 @@ export async function sendContactConfirmation({ name, email, subject, message, p
       <p style="margin:0 0 18px;">${escapeHtml(c.replySoon)}</p>
       <div style="padding:18px 20px;border:1px solid ${BRAND_BORDER};border-radius:16px;background:${BRAND_SURFACE};">
         <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.subjectLabel)}</p>
-        <p style="margin:0 0 16px;">${escapeHtml(subjectLabel)}</p>
-        ${productTitle ? `<p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.artworkLabel)}</p>
-        <p style="margin:0 0 16px;">${escapeHtml(productTitle)}</p>` : ""}
-        <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.messageLabel)}</p>
-        <p dir="auto" style="margin:0;">${nl2br(message)}</p>
+        <p style="margin:0;">${escapeHtml(subjectLabel)}</p>
+        ${productTitle ? `<p style="margin:16px 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.artworkLabel)}</p>
+        <p style="margin:0;">${escapeHtml(productTitle)}</p>` : ""}
       </div>
     `,
     footer: escapeHtml(c.footer),
