@@ -16,7 +16,7 @@ The live site runs in **portfolio mode**: visitors browse the gallery and send e
 - **Tests that prove the locking works.** The race-condition tests hold a row lock until both competing calls are waiting, then release them together. Remove the `FOR UPDATE` locks and those tests fail.
 - **One switch, two products.** In portfolio mode the server never loads Stripe or the database driver, and the frontend build leaves out all shop code, Stripe.js included.
 - **Bilingual and right-to-left.** Persian mirrors the whole layout using logical CSS properties, with self-hosted fonts and Persian digits.
-- **Privacy by design.** No cookies, analytics or third-party requests. Contact messages are emailed rather than stored, and sending them to the artist in Iran requires the visitor's explicit consent under UK GDPR Article 49(1)(a).
+- **Privacy by design.** No cookies, analytics or third-party requests. Contact messages are emailed rather than stored (the email provider deletes its copy after 30 days), the visitor's confirmation doesn't repeat their message, and sending them to the artist in Iran requires the visitor's explicit consent under UK GDPR Article 49(1)(a).
 
 ## Architecture
 
