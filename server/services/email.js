@@ -1,4 +1,4 @@
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { Resend } from "resend";
 
 export const BRAND_NAME = "Maryam Mohseni Art";
 export const BRAND_ACCENT = "#D98C7A";
@@ -6,17 +6,17 @@ export const BRAND_TEXT = "#2F2A26";
 export const BRAND_SURFACE = "#F6F1EB";
 export const BRAND_BORDER = "#E8DCD0";
 
-// Lazily created so missing AWS_REGION doesn't crash the server on startup.
-let _ses = null;
-function getSES() {
-  const region = process.env.AWS_REGION?.trim();
+// Lazily created so a missing RESEND_API_KEY doesn't crash the server on startup.
+let _resend = null;
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
 
-  if (!region) {
-    throw new Error("AWS_REGION is not configured for SES.");
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured.");
   }
 
-  if (!_ses) _ses = new SESClient({ region });
-  return _ses;
+  if (!_resend) _resend = new Resend(apiKey);
+  return _resend;
 }
 
 /* Escapes characters that have special meaning in HTML.
@@ -61,67 +61,49 @@ export function buildEmailHtml({ eyebrow, title, intro, body, footer, dir = "ltr
   `;
 }
 
-/* Low-level helper — send a plain-text + HTML email via SES.
+/* Low-level helper — send a plain-text + HTML email via Resend.
    All higher-level email functions call this: the contact emails below
-   and the order emails in commerce/emails.js. */
+   and the order emails in commerce/emails.js. Swapping email provider
+   only means changing this function and getResend(). */
 export async function sendEmail({ to, subject, text, html, replyTo, bcc }) {
-  const ses = getSES();
-  const source = process.env.SES_FROM_ADDRESS?.trim();
+  const resend = getResend();
+  const from = process.env.EMAIL_FROM_ADDRESS?.trim();
 
-  if (!source) {
-    throw new Error("SES_FROM_ADDRESS is not configured.");
+  if (!from) {
+    throw new Error("EMAIL_FROM_ADDRESS is not configured.");
   }
 
   if (!to?.trim()) {
     throw new Error("Email recipient is required.");
   }
 
-  const params = {
-    Destination: {
-      ToAddresses: [to],
-    },
-    Message: {
-      Body: {
-        Html: {
-          Charset: "UTF-8",
-          Data: html,
-        },
-        Text: {
-          Charset: "UTF-8",
-          Data: text,
-        },
-      },
-      Subject: {
-        Charset: "UTF-8",
-        Data: subject,
-      },
-    },
-    Source: source,
-  };
+  // Resend reports failures in `error` rather than throwing
+  const { error } = await resend.emails.send({
+    from,
+    to: [to],
+    subject,
+    html,
+    text,
+    ...(replyTo?.length && { replyTo }),
+    ...(bcc?.length && { bcc }),
+  });
 
-  if (replyTo?.length) {
-    params.ReplyToAddresses = replyTo;
+  if (error) {
+    throw new Error(`Resend could not send the email: ${error.message}`);
   }
-
-  if (bcc?.length) {
-    params.Destination.BccAddresses = bcc;
-  }
-
-  const command = new SendEmailCommand(params);
-  await ses.send(command);
 }
 
-/* Sends the contact form message to the artist (SES_OWNER_ADDRESS).
+/* Sends the contact form message to the artist (EMAIL_OWNER_ADDRESS).
    It states when the visitor consented to the message being sent to Iran
    — nothing else records that, since messages aren't stored.
-   SES_COPY_ADDRESS (optional) gets a blind copy: set it to an inbox the
+   EMAIL_COPY_ADDRESS (optional) gets a blind copy: set it to an inbox the
    UK operator controls so the controller keeps that record too. */
 export async function sendContactNotification({ name, email, subject, message, product, lang = "en", consentAt }) {
-  const ownerEmail = process.env.SES_OWNER_ADDRESS?.trim();
-  const copyEmail = process.env.SES_COPY_ADDRESS?.trim();
+  const ownerEmail = process.env.EMAIL_OWNER_ADDRESS?.trim();
+  const copyEmail = process.env.EMAIL_COPY_ADDRESS?.trim();
 
   if (!ownerEmail) {
-    throw new Error("SES_OWNER_ADDRESS is not configured.");
+    throw new Error("EMAIL_OWNER_ADDRESS is not configured.");
   }
 
   const consentLine = `Consent to send to the artist in Iran: given ${consentAt.toISOString()} (UK GDPR Art. 49(1)(a))`;
@@ -186,8 +168,6 @@ const CONFIRMATION_COPY = {
     replySoon: "A reply will follow as soon as possible.",
     subjectLabel: "Subject",
     artworkLabel: "Artwork",
-    messageLabel: "Your message",
-    messageCopyLabel: "Message copy:",
     signOff: "Best regards,",
     footer: "If you need to add anything else, simply reply to this email.",
     subjects: {},
@@ -205,8 +185,6 @@ const CONFIRMATION_COPY = {
     replySoon: "به‌زودی پاسخ داده خواهد شد.",
     subjectLabel: "موضوع",
     artworkLabel: "اثر",
-    messageLabel: "پیام شما",
-    messageCopyLabel: "رونوشت پیام:",
     signOff: "با احترام،",
     footer: "اگر نکته دیگری دارید، کافی است به همین ایمیل پاسخ دهید.",
     subjects: {
@@ -221,8 +199,12 @@ const CONFIRMATION_COPY = {
 };
 
 /* Sends an acknowledgement back to the person who submitted the form,
-   in the language they were using on the site */
-export async function sendContactConfirmation({ name, email, subject, message, product, lang = "en" }) {
+   in the language they were using on the site.
+   It deliberately doesn't repeat the message: the email provider keeps
+   a copy of every email it sends, so leaving the text out means only the
+   artist's notification holds it. It also gives spammers nothing to
+   gain from typing someone else's address into the form. */
+export async function sendContactConfirmation({ name, email, subject, product, lang = "en" }) {
   const c = CONFIRMATION_COPY[lang] ?? CONFIRMATION_COPY.en;
   const subjectLabel = c.subjects[subject] ?? subject;
   const productTitle = product ? c.productTitle(product) : null;
@@ -234,9 +216,6 @@ export async function sendContactConfirmation({ name, email, subject, message, p
     "",
     `${c.subjectLabel}: ${subjectLabel}`,
     ...(productTitle ? [`${c.artworkLabel}: ${productTitle}`] : []),
-    "",
-    c.messageCopyLabel,
-    message,
     "",
     c.signOff,
     c.brand,
@@ -250,11 +229,9 @@ export async function sendContactConfirmation({ name, email, subject, message, p
       <p style="margin:0 0 18px;">${escapeHtml(c.replySoon)}</p>
       <div style="padding:18px 20px;border:1px solid ${BRAND_BORDER};border-radius:16px;background:${BRAND_SURFACE};">
         <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.subjectLabel)}</p>
-        <p style="margin:0 0 16px;">${escapeHtml(subjectLabel)}</p>
-        ${productTitle ? `<p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.artworkLabel)}</p>
-        <p style="margin:0 0 16px;">${escapeHtml(productTitle)}</p>` : ""}
-        <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.messageLabel)}</p>
-        <p dir="auto" style="margin:0;">${nl2br(message)}</p>
+        <p style="margin:0;">${escapeHtml(subjectLabel)}</p>
+        ${productTitle ? `<p style="margin:16px 0 8px;font-weight:600;color:${BRAND_TEXT};">${escapeHtml(c.artworkLabel)}</p>
+        <p style="margin:0;">${escapeHtml(productTitle)}</p>` : ""}
       </div>
     `,
     footer: escapeHtml(c.footer),

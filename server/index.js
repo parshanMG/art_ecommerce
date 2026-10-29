@@ -17,7 +17,7 @@ const PORT = Number(process.env.PORT) || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 const isMissing = (name) => !process.env[name]?.trim();
-const requiredEmailEnv = ["AWS_REGION", "SES_FROM_ADDRESS", "SES_OWNER_ADDRESS"];
+const requiredEmailEnv = ["RESEND_API_KEY", "EMAIL_FROM_ADDRESS", "EMAIL_OWNER_ADDRESS"];
 const missingEmailEnv = requiredEmailEnv.filter(isMissing);
 
 // Shop mode also needs the database and Stripe
@@ -44,7 +44,7 @@ if (COMMERCE_ENABLED) {
 
 if (missingEmailEnv.length > 0) {
   const emailConfigMessage =
-    `[boot ${BOOT_ID}] Missing SES environment variables: ${missingEmailEnv.join(", ")}. ` +
+    `[boot ${BOOT_ID}] Missing email environment variables: ${missingEmailEnv.join(", ")}. ` +
     "Contact and order emails will fail until they are configured.";
 
   if (process.env.NODE_ENV === "production") {
@@ -67,7 +67,7 @@ const app = createApp({
     pid: process.pid,
     startedAt: STARTED_AT,
     config: {
-      sesConfigured: missingEmailEnv.length === 0,
+      emailConfigured: missingEmailEnv.length === 0,
       ...(COMMERCE_ENABLED && {
         stripeWebhookSecretLoaded: !isMissing("STRIPE_WEBHOOK_SECRET"),
         reservationTtlMinutes: Number(process.env.RESERVATION_TTL_MINUTES) || 30,

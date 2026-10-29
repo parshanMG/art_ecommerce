@@ -16,7 +16,7 @@ The live site runs in **portfolio mode**: visitors browse the gallery and send e
 - **Tests that prove the locking works.** The race-condition tests hold a row lock until both competing calls are waiting, then release them together. Remove the `FOR UPDATE` locks and those tests fail.
 - **One switch, two products.** In portfolio mode the server never loads Stripe or the database driver, and the frontend build leaves out all shop code, Stripe.js included.
 - **Bilingual and right-to-left.** Persian mirrors the whole layout using logical CSS properties, with self-hosted fonts and Persian digits.
-- **Privacy by design.** No cookies, analytics or third-party requests. Contact messages are emailed rather than stored, and sending them to the artist in Iran requires the visitor's explicit consent under UK GDPR Article 49(1)(a).
+- **Privacy by design.** No cookies, analytics or third-party requests. Contact messages are emailed rather than stored (the email provider deletes its copy after 30 days), the visitor's confirmation doesn't repeat their message, and sending them to the artist in Iran requires the visitor's explicit consent under UK GDPR Article 49(1)(a).
 
 ## Architecture
 
@@ -32,7 +32,7 @@ flowchart LR
   end
 
   Catalog[("data/products.json")]
-  SES["AWS SES<br/>(email)"]
+  Email["Resend<br/>(email)"]
   PG[("PostgreSQL<br/>products · orders")]
   Stripe["Stripe"]
 
@@ -40,11 +40,11 @@ flowchart LR
   SPA -. shop mode .-> Commerce
   SPA -. card details .-> Stripe
   Core -- portfolio mode --> Catalog
-  Core --> SES
+  Core --> Email
   Commerce --> PG
   Commerce --> Stripe
   Stripe -- webhook --> Commerce
-  Commerce --> SES
+  Commerce --> Email
 ```
 
 ### The two modes
@@ -53,9 +53,9 @@ flowchart LR
 |---|---|---|
 | Switch | — | `COMMERCE_ENABLED=true` (server) and `VITE_COMMERCE_ENABLED=true` (frontend) |
 | Products | `server/data/products.json` | PostgreSQL, seeded from the same file, with live availability |
-| Contact form | Emailed via SES | Emailed via SES |
+| Contact form | Emailed via Resend | Emailed via Resend |
 | Checkout | Off (routes answer 503) | Cart, Stripe Payment Element, reservations, order emails |
-| Needs | SES | SES, PostgreSQL, a Stripe account |
+| Needs | Resend | Resend, PostgreSQL, a Stripe account |
 
 ### Checkout flow (shop mode)
 
@@ -81,7 +81,7 @@ server/
   catalog.js            reads data/products.json
   data/products.json    the artwork catalog — the source of truth
   routes/               products, contact
-  services/email.js     SES sender, email layout, contact emails
+  services/email.js     Resend sender, email layout, contact emails
   commerce/             shop mode only, loaded on demand
     index.js            mounts the routes, products from the database
     orders.js           reservations and order recording
@@ -101,7 +101,7 @@ No database needed.
 ```bash
 npm install
 cd server && npm install
-cp .env.example .env            # fill in the SES settings to send email
+cp .env.example .env            # fill in the Resend settings to send email
 cp ../.env.example ../.env
 ```
 
@@ -194,8 +194,8 @@ Migrations live in `server/commerce/db/migrations/` and run in filename order wi
 | Variable | Notes |
 |---|---|
 | `COMMERCE_ENABLED` | `true` for shop mode |
-| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SES_FROM_ADDRESS`, `SES_OWNER_ADDRESS` | Required when `NODE_ENV=production` |
-| `SES_COPY_ADDRESS` | Optional blind copy of each contact message, as the UK operator's record of consent |
+| `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_OWNER_ADDRESS` | Required when `NODE_ENV=production` |
+| `EMAIL_COPY_ADDRESS` | Optional blind copy of each contact message, as the UK operator's record of consent |
 | `DB_*`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESERVATION_TTL_MINUTES` | Shop mode only |
 | `TRUST_PROXY` | Proxies in front of the API (see below) |
 
@@ -204,7 +204,7 @@ Migrations live in `server/commerce/db/migrations/` and run in filename order wi
 - **SPA fallback:** the host must serve `index.html` for unknown paths so `/shop`, `/about` and `/contact` work on refresh (for example a CloudFront custom error response 403/404 → `/index.html`, 200).
 - **Docker:** `server/Dockerfile` builds the API image, including the catalog. `.dockerignore` keeps `.env` out of the image; pass secrets as runtime environment variables. In shop mode, run `npm run migrate` against the production database before starting a new version.
 - **Proxies:** behind a load balancer set `TRUST_PROXY` (ALB only → `1`, CloudFront + ALB → `2`) so rate limits apply per visitor. It defaults to `1` in production.
-- **SES:** the sender address must be verified, and the account out of the SES sandbox, to email arbitrary visitors.
+- **Resend:** verify the sending domain in Resend (SPF and DKIM DNS records) and use an API key with sending access only. Keep open and click tracking off for the domain, as the privacy policy promises no tracking. Until a domain is verified, Resend only delivers to the account owner's own address.
 - **Stripe (shop mode):** register `https://<api-host>/api/webhooks/stripe` for `payment_intent.succeeded`, `payment_intent.payment_failed` and `payment_intent.canceled`.
 
 ## Build
