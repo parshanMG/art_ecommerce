@@ -5,7 +5,7 @@ A bilingual (English / Persian) portfolio site for the watercolour artist Maryam
 The live site runs in **portfolio mode**: visitors browse the gallery and send enquiries, and sales are arranged directly with the artist. **Shop mode** adds a cart, Stripe checkout and order handling backed by PostgreSQL. It's kept working and tested so it can be turned on for a demo or a future store.
 
 - **Frontend:** React 18, Vite, Tailwind CSS v4, React Router
-- **Backend:** Node 20+, Express, AWS SES; in shop mode also PostgreSQL and Stripe
+- **Backend:** Node 20+, Express, Resend email service; in shop mode also PostgreSQL and Stripe
 - **Tests:** Node's built-in test runner, against a real PostgreSQL database in CI
 
 ## Highlights
