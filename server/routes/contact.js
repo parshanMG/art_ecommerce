@@ -6,9 +6,9 @@ import { findCatalogProduct } from "../catalog.js";
 
 /* POST /api/contact
    Emails the message to the artist via Resend, then sends the visitor a
-   confirmation. Nothing is stored: the notification email (and the
-   optional EMAIL_COPY_ADDRESS copy) is the record, including when consent
-   was given. If the artist's email can't be sent the visitor gets an
+   confirmation. Nothing is stored: the artist's email is the record,
+   including when consent was given (in a header customers never see).
+   If the artist's email can't be sent the visitor gets an
    error, so they know to try again.
    productId (optional) links the enquiry to an artwork — set when the
    visitor arrives from an "Enquire" button.

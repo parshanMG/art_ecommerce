@@ -195,7 +195,6 @@ Migrations live in `server/commerce/db/migrations/` and run in filename order wi
 |---|---|
 | `COMMERCE_ENABLED` | `true` for shop mode |
 | `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_OWNER_ADDRESS` | Required when `NODE_ENV=production` |
-| `EMAIL_COPY_ADDRESS` | Optional blind copy of each contact message, as the UK operator's record of consent |
 | `DB_*`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESERVATION_TTL_MINUTES` | Shop mode only |
 | `TRUST_PROXY` | Proxies in front of the API (see below) |
 
