@@ -426,10 +426,11 @@ export default function Contact() {
                   <span>{c.consent}</span>
                 </label>
 
+                {/* Greyed out and unclickable until the consent box is ticked */}
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3.5 text-base font-semibold text-white transition hover:bg-[#bf7360]"
+                  disabled={isSubmitting || !form.transferConsent}
+                  className="mt-1 w-full rounded-lg bg-[#D98C7A] py-3.5 text-base font-semibold text-white transition enabled:hover:bg-[#bf7360] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
                 >
                   {isSubmitting ? c.sending : c.send}
                 </button>
