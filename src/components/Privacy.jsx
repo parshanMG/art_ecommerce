@@ -15,8 +15,9 @@
 
    ── KEEP IT ACCURATE ──────────────────────────────────────────────
    • Contact messages aren't stored on the server — they're emailed.
-     RETENTION is how long the email copies are kept: delete them by
-     hand, or with an inbox rule, once they're older than that.
+     They reach only the artist's inbox; RETENTION is how long she keeps
+     them after the last contact. Each email also carries the time the
+     visitor consented, so it doubles as the consent record.
    • Resend, the email provider, keeps a copy of every email it sends
      for PROVIDER_RETENTION. Check it still matches Resend's plan
      (resend.com/pricing) and update it if you change plan or provider.
@@ -115,7 +116,7 @@ const COPY = {
         title: "6. How long we keep it",
         blocks: [
           { list: [
-            "Contact form messages aren't stored on this website — they're sent straight on by email. Our email provider, Resend, deletes its copy {providerRetention} after sending. We keep a copy of each one in our own inbox as a record of your consent, and delete it {retention} after you send it.",
+            "Contact form messages aren't stored on this website — they're sent straight on by email. Our email provider, Resend, deletes its copy {providerRetention} after sending.",
             "The artist keeps your emails only as long as needed to deal with your enquiry or purchase, and no longer than {retention} after your last contact.",
             "Server logs kept by our hosting provider are deleted on its standard short cycle.",
           ] },
@@ -239,7 +240,7 @@ const COPY = {
         title: "۶. مدت نگهداری",
         blocks: [
           { list: [
-            "پیام‌های فرم تماس در این وب‌سایت ذخیره نمی‌شوند و مستقیماً با ایمیل فرستاده می‌شوند. ارائه‌دهنده خدمات ایمیل ما، Resend، نسخه خود را {providerRetention} پس از ارسال حذف می‌کند. ما یک نسخه از هر پیام را به‌عنوان سابقه رضایت شما در صندوق ایمیل خودمان نگه می‌داریم و {retention} پس از ارسال، آن را حذف می‌کنیم.",
+            "پیام‌های فرم تماس در این وب‌سایت ذخیره نمی‌شوند و مستقیماً با ایمیل فرستاده می‌شوند. ارائه‌دهنده خدمات ایمیل ما، Resend، نسخه خود را {providerRetention} پس از ارسال حذف می‌کند.",
             "هنرمند ایمیل‌های شما را فقط تا زمانی که برای رسیدگی به پرسش یا خریدتان لازم است نگه می‌دارد، و نه بیش از {retention} پس از آخرین تماس شما.",
             "گزارش‌های سرور نزد ارائه‌دهنده میزبانی طبق چرخه کوتاه معمول آن حذف می‌شوند.",
           ] },

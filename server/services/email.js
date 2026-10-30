@@ -65,7 +65,7 @@ export function buildEmailHtml({ eyebrow, title, intro, body, footer, dir = "ltr
    All higher-level email functions call this: the contact emails below
    and the order emails in commerce/emails.js. Swapping email provider
    only means changing this function and getResend(). */
-export async function sendEmail({ to, subject, text, html, replyTo, bcc }) {
+export async function sendEmail({ to, subject, text, html, replyTo, bcc, headers }) {
   const resend = getResend();
   const from = process.env.EMAIL_FROM_ADDRESS?.trim();
 
@@ -86,6 +86,7 @@ export async function sendEmail({ to, subject, text, html, replyTo, bcc }) {
     text,
     ...(replyTo?.length && { replyTo }),
     ...(bcc?.length && { bcc }),
+    ...(headers && { headers }),
   });
 
   if (error) {
@@ -93,69 +94,62 @@ export async function sendEmail({ to, subject, text, html, replyTo, bcc }) {
   }
 }
 
-/* Sends the contact form message to the artist (EMAIL_OWNER_ADDRESS).
-   It states when the visitor consented to the message being sent to Iran
-   — nothing else records that, since messages aren't stored.
-   EMAIL_COPY_ADDRESS (optional) gets a blind copy: set it to an inbox the
-   UK operator controls so the controller keeps that record too. */
+/* Sends the contact form message to the artist (EMAIL_OWNER_ADDRESS),
+   with Reply-To set to the visitor so she can simply press Reply.
+   Her reply quotes this email back to the visitor, so it's kept short
+   and plain, in the visitor's language: their message, who sent it and
+   nothing addressed to the artist.
+   Messages aren't stored, so this email is the record that the visitor
+   consented to it being sent to Iran (UK GDPR Art. 49(1)(a)). The time
+   goes in the X-Contact-Consent header: kept with the email in the
+   artist's inbox (Gmail: "Show original"), but never shown or quoted. */
 export async function sendContactNotification({ name, email, subject, message, product, lang = "en", consentAt }) {
   const ownerEmail = process.env.EMAIL_OWNER_ADDRESS?.trim();
-  const copyEmail = process.env.EMAIL_COPY_ADDRESS?.trim();
 
   if (!ownerEmail) {
     throw new Error("EMAIL_OWNER_ADDRESS is not configured.");
   }
 
-  const consentLine = `Consent to send to the artist in Iran: given ${consentAt.toISOString()} (UK GDPR Art. 49(1)(a))`;
+  const c = CONTACT_COPY[lang] ?? CONTACT_COPY.en;
+  const subjectLabel = c.subjects[subject] ?? subject;
+  const productTitle = product ? c.productTitle(product) : null;
+  const rtl = c.dir === "rtl";
 
-  const emailSubject = `New contact enquiry: ${subject}${product ? ` — ${product.title}` : ""}`;
+  const emailSubject = `${subjectLabel}${productTitle ? `: ${productTitle}` : ""} · ${c.brand}`;
   const emailText = [
-    "A new contact form message has been submitted.",
-    "",
-    `Name: ${name}`,
-    `Email: ${email}`,
-    `Subject: ${subject}`,
-    ...(product ? [`Artwork: ${product.title} (${product.id})`] : []),
-    `Language: ${LANGUAGE_NAMES[lang]}`,
-    consentLine,
-    "",
-    "Message:",
     message,
+    "",
+    `${name} <${email}>`,
+    ...(productTitle ? [`${c.artworkLabel}: ${productTitle}`] : []),
+    c.sentVia,
   ].join("\n");
-  const emailHtml = buildEmailHtml({
-    eyebrow: "New Enquiry",
-    title: subject,
-    intro: `You received a new message from <strong>${escapeHtml(name)}</strong> (${escapeHtml(email)}).`,
-    body: `
-      <p style="margin:0 0 18px;"><strong>Name:</strong> ${escapeHtml(name)}</p>
-      <p style="margin:0 0 18px;"><strong>Email:</strong> ${escapeHtml(email)}</p>
-      <p style="margin:0 0 18px;"><strong>Subject:</strong> ${escapeHtml(subject)}</p>
-      ${product ? `<p style="margin:0 0 18px;"><strong>Artwork:</strong> ${escapeHtml(product.title)} <span style="color:#7b726a;">(${escapeHtml(product.id)})</span></p>` : ""}
-      <p style="margin:0 0 18px;"><strong>Language:</strong> ${LANGUAGE_NAMES[lang]}</p>
-      <p style="margin:0 0 18px;font-size:13px;color:#7b726a;">${escapeHtml(consentLine)}</p>
-      <div style="padding:18px 20px;border:1px solid ${BRAND_BORDER};border-radius:16px;background:${BRAND_SURFACE};">
-        <p style="margin:0 0 8px;font-weight:600;color:${BRAND_TEXT};">Message</p>
-        <p dir="auto" style="margin:0;white-space:normal;">${nl2br(message)}</p>
-      </div>
-    `,
-    footer: `Reply directly to this email to respond to ${escapeHtml(name)}.` ,
-  });
+  const emailHtml = `
+    <div dir="${c.dir}" style="font-family:${rtl ? "Tahoma,Arial,sans-serif" : "Arial,Helvetica,sans-serif"};font-size:15px;line-height:1.6;color:${BRAND_TEXT};text-align:${rtl ? "right" : "left"};">
+      <p dir="auto" style="margin:0 0 20px;">${nl2br(message)}</p>
+      <p style="margin:0;font-size:13px;color:#7b726a;">
+        ${escapeHtml(name)} <span dir="ltr">&lt;${escapeHtml(email)}&gt;</span><br />
+        ${productTitle ? `${escapeHtml(c.artworkLabel)}: ${escapeHtml(productTitle)}<br />` : ""}
+        ${escapeHtml(c.sentVia)}
+      </p>
+    </div>
+  `;
   await sendEmail({
     to: ownerEmail,
     subject: emailSubject,
     text: emailText,
     html: emailHtml,
     replyTo: [email],
-    bcc: copyEmail ? [copyEmail] : undefined,
+    headers: {
+      "X-Contact-Consent": `Transfer to the artist in Iran agreed ${consentAt.toISOString()} (UK GDPR Art. 49(1)(a))`,
+    },
   });
 }
 
-const LANGUAGE_NAMES = { en: "English", fa: "Persian (فارسی)" };
-
-/* Visitor-facing copy for the contact confirmation, per site language.
+/* Visitor-facing copy for the contact emails, per site language: the
+   confirmation, and the notification the artist's reply quotes back.
    Subject values arrive in English (they're validated against a fixed
    list), so the Persian copy maps them to their Persian labels. */
-const CONFIRMATION_COPY = {
+const CONTACT_COPY = {
   en: {
     dir: "ltr",
     brand: BRAND_NAME,
@@ -168,6 +162,7 @@ const CONFIRMATION_COPY = {
     replySoon: "A reply will follow as soon as possible.",
     subjectLabel: "Subject",
     artworkLabel: "Artwork",
+    sentVia: "Sent through the website contact form",
     signOff: "Best regards,",
     footer: "If you need to add anything else, simply reply to this email.",
     subjects: {},
@@ -185,6 +180,7 @@ const CONFIRMATION_COPY = {
     replySoon: "به‌زودی پاسخ داده خواهد شد.",
     subjectLabel: "موضوع",
     artworkLabel: "اثر",
+    sentVia: "ارسال‌شده از طریق فرم تماس وب‌سایت",
     signOff: "با احترام،",
     footer: "اگر نکته دیگری دارید، کافی است به همین ایمیل پاسخ دهید.",
     subjects: {
@@ -205,7 +201,7 @@ const CONFIRMATION_COPY = {
    artist's notification holds it. It also gives spammers nothing to
    gain from typing someone else's address into the form. */
 export async function sendContactConfirmation({ name, email, subject, product, lang = "en" }) {
-  const c = CONFIRMATION_COPY[lang] ?? CONFIRMATION_COPY.en;
+  const c = CONTACT_COPY[lang] ?? CONTACT_COPY.en;
   const subjectLabel = c.subjects[subject] ?? subject;
   const productTitle = product ? c.productTitle(product) : null;
 
