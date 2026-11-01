@@ -1,6 +1,6 @@
 [
 	{
-		"id": "chromatic-drift",
+		"id": "1",
 		"title": "Chromatic Drift",
 		"price": 29.99,
 		"category": "print",
@@ -14,7 +14,7 @@
 		"description": "A flowing composition of layered tones and movement."
 	},
 	{
-		"id": "blossoms-of-emotion",
+		"id": "2",
 		"title": "Blossoms of Emotion",
 		"price": 39.99,
 		"category": "watercolour",
@@ -28,7 +28,7 @@
 		"description": "Warm floral abstraction with bright gold accents."
 	},
 	{
-		"id": "a-glimpse-of-spring",
+		"id": "3",
 		"title": "A Glimpse of Spring",
 		"price": 49.99,
 		"category": "watercolour",
@@ -42,7 +42,7 @@
 		"description": "A quiet still-life with muted greys and soft contrast."
 	},
 	{
-		"id": "the-mystery-of-objects",
+		"id": "4",
 		"title": "The Mystery of Objects",
 		"price": 59.99,
 		"category": "watercolour",
@@ -56,7 +56,7 @@
 		"description": "Expressive strokes inspired by modern calligraphy forms."
 	},
 	{
-		"id": "crimson-signature",
+		"id": "5",
 		"title": "Crimson Signature",
 		"price": 34.99,
 		"category": "print",
@@ -70,7 +70,7 @@
 		"description": "A bold red-centric piece with energetic line work."
 	},
 	{
-		"id": "urban-mask",
+		"id": "6",
 		"title": "Urban Mask",
 		"price": 44.99,
 		"category": "print",
@@ -84,7 +84,7 @@
 		"description": "A layered portrait blending street textures and geometry."
 	},
 	{
-		"id": "scarlet-passion",
+		"id": "7",
 		"title": "Scarlet Passion",
 		"price": 54.99,
 		"category": "watercolour",
@@ -98,7 +98,7 @@
 		"description": "A nocturnal interior scene with cool moonlit highlights."
 	},
 	{
-		"id": "pomegranate-trio",
+		"id": "8",
 		"title": "Pomegranate Trio",
 		"price": 64.99,
 		"category": "watercolour",
@@ -112,7 +112,7 @@
 		"description": "A vivid fruit study with rich reds and dramatic lighting."
 	},
 	{
-		"id": "persian-echo",
+		"id": "9",
 		"title": "Persian Echo",
 		"price": 74.99,
 		"category": "mixed-media",
@@ -126,7 +126,7 @@
 		"description": "Ornamental patterns and color harmonies inspired by heritage motifs."
 	},
 	{
-		"id": "indigo-reverie",
+		"id": "10",
 		"title": "Indigo Reverie",
 		"price": 45.99,
 		"category": "print",
@@ -140,7 +140,7 @@
 		"description": "A dreamlike composition in deep indigo tones with fluid forms."
 	},
 	{
-		"id": "saffron-rise",
+		"id": "11",
 		"title": "Saffron Rise",
 		"price": 55.99,
 		"category": "watercolour",
@@ -154,7 +154,7 @@
 		"description": "Warm saffron and amber washes evoking the light of early morning."
 	},
 	{
-		"id": "still-waters",
+		"id": "12",
 		"title": "Still Waters",
 		"price": 69.99,
 		"category": "oil",
@@ -168,7 +168,7 @@
 		"description": "A serene reflection study with muted blues and soft light."
 	},
 	{
-		"id": "shadow-of-history",
+		"id": "13",
 		"title": "Shadow of History",
 		"price": 79.99,
 		"category": "watercolour",

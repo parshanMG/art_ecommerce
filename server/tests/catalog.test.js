@@ -11,6 +11,8 @@ const PUBLIC_DIR = new URL("../../public/", import.meta.url);
 test("every product has an id, title, price and category", () => {
   for (const p of catalog) {
     assert.ok(p.id && typeof p.id === "string", `product without an id: ${JSON.stringify(p)}`);
+    // A number in quotes ("14"): a new product takes the next one up
+    assert.match(p.id, /^[1-9]\d*$/, `${p.id} is not a numbered id like "14"`);
     assert.ok(p.title, `${p.id} has no title`);
     assert.ok(typeof p.price === "number" && p.price > 0, `${p.id} has no valid price`);
     assert.ok(p.category, `${p.id} has no category`);

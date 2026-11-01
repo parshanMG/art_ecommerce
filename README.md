@@ -156,6 +156,8 @@ GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) builds the
 
 `server/data/products.json` holds the artwork. Images go in `public/images/products/`. The catalog tests check for unique ids, required fields and missing images.
 
+Ids are numbers in quotes (`"id": "14"`). A new product takes the next number after the highest one. Never reuse the id of a removed product: old links and shop orders still point to it.
+
 - **Portfolio mode:** restart the API (or redeploy) after editing the file.
 - **Shop mode:** run `npm run seed` in `server/`. It updates titles, prices, images and so on. `"available": false` marks a piece sold, for example at an exhibition. `"available": true` never revives a piece sold through the site; un-sell those in the database. Products removed from the file are listed as a warning, not deleted.
 
