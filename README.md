@@ -156,6 +156,17 @@ GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) builds the
 
 `server/data/products.json` holds the artwork. Images go in `public/images/products/`. The catalog tests check for unique ids, required fields and missing images.
 
+Ids are numbers in quotes (`"id": "14"`). A new product takes the next number after the highest one. Never reuse the id of a removed product: old links and shop orders still point to it.
+
+### Images
+
+Put originals in `public/images/products/`; they're never changed. `npm run images` makes web copies in `public/images/products-optimized/`: WebP at 480, 800, 1200 and 1600px wide (quality 90), skipping any size larger than the original, plus the original file itself as the largest size. Originals wider than 2560px are scaled down to 2560 instead. Copies get web-safe names (`Rose Garden.JPG` → `rose-garden-800.webp`), and two originals that would get the same name stop the run with an error.
+
+- It runs before every `npm run dev` and `npm run build`, so the copies are made locally and on the host at deploy. They're not committed: only the originals are.
+- `npm run images:watch` keeps running and makes copies as soon as an image is added. Deleting an original deletes its copies.
+- sharp is pinned to an exact version so the host makes the same copies as your machine.
+- `manifest.json` in the output folder lists every copy and its width. Unchanged images are skipped, and changing a setting in [scripts/optimize-images.js](scripts/optimize-images.js) redoes them all.
+
 - **Portfolio mode:** restart the API (or redeploy) after editing the file.
 - **Shop mode:** run `npm run seed` in `server/`. It updates titles, prices, images and so on. `"available": false` marks a piece sold, for example at an exhibition. `"available": true` never revives a piece sold through the site; un-sell those in the database. Products removed from the file are listed as a warning, not deleted.
 

@@ -24,3 +24,6 @@ dist/
 build/
 coverage/
 .cache/
+
+# Image copies made by scripts/optimize-images.js on dev and build
+public/images/products-optimized/
