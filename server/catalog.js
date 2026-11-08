@@ -5,11 +5,11 @@
    it into the database, which then also tracks live reservations.
 
    The file is read once at startup — restart the server (or redeploy)
-   after editing it.
+   after editing it. It's imported rather than read from disk so the
+   Cloudflare Worker (worker/index.js), which has no files to read,
+   bundles it in.
 ───────────────────────────────────────────────────────────────────── */
-import { readFileSync } from "fs";
-
-const CATALOG_URL = new URL("./data/products.json", import.meta.url);
+import products from "./data/products.json" with { type: "json" };
 
 /* The fields GET /api/products returns, with the defaults the database
    would fill in, so both modes answer with the same shape. */
@@ -43,10 +43,9 @@ function compareProducts(a, b) {
   return a.title.localeCompare(b.title);
 }
 
-export function loadCatalog(url = CATALOG_URL) {
-  const products = JSON.parse(readFileSync(url, "utf-8"));
+export function loadCatalog() {
   if (!Array.isArray(products)) {
-    throw new Error(`${url.pathname} must contain an array of products.`);
+    throw new Error("data/products.json must contain an array of products.");
   }
   return products;
 }
