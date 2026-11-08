@@ -313,7 +313,7 @@ export default function FeaturedProductsCarousel() {
                           {/* Enquire button — always visible */}
                           <Link
                             to={`/contact?product=${product.id}`}
-                            className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center transition bg-[#2F2A26] text-white hover:bg-[#D98C7A]"
+                            className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-center transition bg-[#D98C7A] text-white hover:bg-[#bf7360]"
                           >
                             {c.enquire}
                           </Link>
