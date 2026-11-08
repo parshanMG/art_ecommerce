@@ -15,8 +15,11 @@
     // Paths with no file (/about, /shop?art=3, …) get index.html, so the
     // React app can show the right page
     "not_found_handling": "single-page-application",
-    // /api requests always reach worker/index.js, never index.html
-    "run_worker_first": ["/api/*"]
+    // Everything reaches worker/index.js first (so /api works and www
+    // pages can be redirected) except the built code and the images,
+    // which are served straight from storage: faster, and they don't
+    // count toward the Worker's free daily requests
+    "run_worker_first": ["/*", "!/assets/*", "!/images/*"]
   },
 
   // Contact form: at most 3 messages a minute from one address. The

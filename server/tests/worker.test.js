@@ -77,6 +77,12 @@ test("worker: www addresses redirect permanently to the bare domain", async () =
   assert.equal(res.headers.get("Location"), "https://example.com/shop?art=3");
 });
 
+test("worker: the API answers on www too, since browsers block redirected background requests", async () => {
+  const res = await createWorker().fetch(new Request("https://www.example.com/api/products"), fakeEnv());
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).length, catalog.length);
+});
+
 test("worker: checkout is off, unknown API paths are 404, pages go to the website files", async () => {
   const worker = createWorker();
   const checkout = await worker.fetch(post("/api/checkout/create-payment-intent", {}), fakeEnv());

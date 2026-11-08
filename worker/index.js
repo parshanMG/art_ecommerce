@@ -65,8 +65,11 @@ export function createWorker(deps = {}) {
       const { method } = request;
 
       /* One address for search engines: www.maryammohseni.com/… moves
-         permanently to maryammohseni.com/… */
-      if (url.hostname.startsWith("www.")) {
+         permanently to maryammohseni.com/… The API is left alone: a
+         page's background request that's redirected to another domain
+         is blocked by the browser, so a page somehow opened on www would
+         lose its paintings. */
+      if (url.hostname.startsWith("www.") && !pathname.startsWith("/api/")) {
         url.hostname = url.hostname.slice(4);
         return Response.redirect(url.toString(), 301);
       }
