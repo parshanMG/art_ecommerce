@@ -29,5 +29,22 @@
     }
   ],
 
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+
+  // Preview builds: Cloudflare runs `wrangler preview` for every branch
+  // except main, giving it its own test URL. That fails unless this
+  // block exists, and Previews don't inherit settings from above, so
+  // anything worker/index.js reads from env is repeated here. The
+  // limiter gets its own namespace so test traffic can't use up the live
+  // site's limit. No email secrets are given to Previews, so their
+  // contact form can't send real enquiries to the artist.
+  "previews": {
+    "ratelimits": [
+      {
+        "name": "CONTACT_LIMITER",
+        "namespace_id": "1002",
+        "simple": { "limit": 3, "period": 60 }
+      }
+    ]
+  }
 }
