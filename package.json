@@ -10,7 +10,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "images": "node scripts/optimize-images.js",
-    "images:watch": "node scripts/optimize-images.js --watch"
+    "images:watch": "node scripts/optimize-images.js --watch",
+    "build:cloudflare": "npm ci --prefix server --omit=dev && npm run build",
+    "worker:dev": "npm run build && wrangler dev"
   },
   "dependencies": {
     "@fontsource/island-moments": "^5.3.0",
@@ -26,6 +28,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "sharp": "0.35.5",
     "tailwindcss": "^4.2.2",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "wrangler": "4.156.0"
   }
 }
