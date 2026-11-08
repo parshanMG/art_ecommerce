@@ -1,19 +1,31 @@
 /* ──────────────────────────────────────────────────────────────────
    HERO BANNER
    Ken Burns image slideshow — replaces the Vimeo background video.
-   Three product images cycle with smooth crossfades and cinematic
+   Each page load picks SLIDE_COUNT paintings at random from
+   HERO_IMAGES and cycles them with smooth crossfades and cinematic
    zoom / pan animations.
 
    ── HOW TO CUSTOMISE ──────────────────────────────────────────────
 
-   Which images show
-     Edit the SLIDES array. Each entry needs:
-       src  — path to the image (relative to /public/)
-       alt  — screen-reader alt text
-       anim — animation name; pick one of:
-                "kb-zoom-out"   slow pull-back (starts zoomed in)
-                "kb-pan-lr"     lateral drift at constant zoom
-                "kb-pan-tb"     vertical drift top → bottom (great for portrait images)
+   Which images can show
+     Edit the HERO_IMAGES array. Each entry needs:
+       src      — path to the image (relative to /public/)
+       alt      — screen-reader alt text
+       portrait — true for upright paintings, false for wide ones
+     The banner fills the whole screen, so a painting is cropped hard:
+     on a wide monitor an upright painting shows only a band across its
+     middle, and on a phone a wide painting loses its sides. Add one
+     only if its subject sits near the centre with nothing important
+     at the edges, and the file is large — ideally 2000px+ on the long
+     side, since the banner zooms in on top of filling the screen.
+
+   Which movement each slide gets
+     Assigned automatically (see pickSlides) so the slides all move
+     differently: upright paintings get the vertical drift first, wide
+     ones the pull-back or sideways drift. The three movements:
+       "kb-zoom-out"   slow pull-back (starts zoomed in)
+       "kb-pan-lr"     lateral drift at constant zoom
+       "kb-pan-tb"     vertical drift top → bottom
 
    Slide speed
      Change SLIDE_DURATION_S (seconds each slide stays on screen).
@@ -76,32 +88,54 @@ const OVERLAY_COPY = {
 ─────────────────────────────────────────────────────────────────── */
 const HOVER_DELAY_MS = 500;
 
-/* ── Slides ───────────────────────────────────────────────────────────
-   Change src to swap which products appear in the banner.
-   The three anim names each give a different cinematic movement.
+/* ── Hero images ──────────────────────────────────────────────────────
+   The paintings the banner picks from. Checked at full-screen crop on
+   desktop and phone; art7 and art8 are left out because their crops
+   lose the subject. See "Which images can show" above before adding.
 ─────────────────────────────────────────────────────────────────── */
-const SLIDES = [
-  {
-    src:  "/images/products/art9.jpeg",
-    alt:  "Persian Echo",
-    anim: "kb-zoom-out",    // starts zoomed in, slowly pulls back
-  },
-  {
-    src:  "/images/products/art11.jpeg",
-    alt:  "Saffron Rise",
-    anim: "kb-pan-lr",      // drifts left → right at constant zoom
-  },
-  {
-    src:  "/images/products/art1.jpeg",
-    alt:  "Chromatic Drift",
-    anim: "kb-pan-tb",     // wide zoom, drifts top → bottom (great for portrait images)
-  },
+const HERO_IMAGES = [
+  { src: "/images/products/art1.jpeg",  alt: "Chromatic Drift",        portrait: true },
+  { src: "/images/products/art2.jpeg",  alt: "Blossoms of Emotion",    portrait: true },
+  { src: "/images/products/art3.jpeg",  alt: "A Glimpse of Spring",    portrait: true },
+  { src: "/images/products/art4.jpeg",  alt: "The Mystery of Objects", portrait: true },
+  { src: "/images/products/art5.jpeg",  alt: "Crimson Signature",      portrait: true },
+  { src: "/images/products/art6.jpeg",  alt: "Urban Mask",             portrait: true },
+  { src: "/images/products/art9.jpeg",  alt: "Persian Echo",           portrait: false },
+  { src: "/images/products/art10.jpeg", alt: "Indigo Reverie",         portrait: true },
+  { src: "/images/products/art11.jpeg", alt: "Saffron Rise",           portrait: false },
+  { src: "/images/products/art12.jpeg", alt: "Still Waters",           portrait: true },
+  { src: "/images/products/art13.jpeg", alt: "Shadow of History",      portrait: true },
 ];
+
+/* How many paintings one visit cycles through. Every slide is loaded
+   with the page, so keep this small. */
+const SLIDE_COUNT = 3;
+
+/* Picks SLIDE_COUNT paintings at random and gives each a movement no
+   other slide is using, preferring the one that suits its shape */
+function pickSlides() {
+  const pool = [...HERO_IMAGES];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  const unused = new Set(["kb-zoom-out", "kb-pan-lr", "kb-pan-tb"]);
+  return pool.slice(0, SLIDE_COUNT).map((image) => {
+    const preferred = image.portrait
+      ? ["kb-pan-tb", "kb-zoom-out", "kb-pan-lr"]
+      : ["kb-zoom-out", "kb-pan-lr", "kb-pan-tb"];
+    const anim = preferred.find((a) => unused.has(a)) ?? preferred[0];
+    unused.delete(anim);
+    return { ...image, anim };
+  });
+}
 
 /* ──────────────────────────────────────────────────────────────────
    HERO BANNER COMPONENT
 ─────────────────────────────────────────────────────────────────── */
 export default function HeroBanner() {
+  const [slides]                  = useState(pickSlides); // fixed for this visit
   const [active, setActive]       = useState(0);
   const [textVisible, setTextVisible] = useState(false); // controls text slide-up
   const hoverTimer = useRef(null);
@@ -117,11 +151,11 @@ export default function HeroBanner() {
   /* ── Advance to the next slide every SLIDE_DURATION_S seconds ── */
   useEffect(() => {
     const id = setInterval(
-      () => setActive((prev) => (prev + 1) % SLIDES.length),
+      () => setActive((prev) => (prev + 1) % slides.length),
       SLIDE_DURATION_S * 1000
     );
     return () => clearInterval(id); // cleanup on unmount
-  }, []);
+  }, [slides.length]);
 
   /* ── Restart the Ken Burns move each time a slide comes into view ──
      The outgoing slide is left alone so it keeps moving while it fades
@@ -158,36 +192,27 @@ export default function HeroBanner() {
 
           To tweak zoom: change the scale() numbers.
           To tweak pan:  change the translate / translateX values.
+
+          scale(1) already covers the whole banner (object-cover), so
+          lower zoom shows more of the painting. A pan must stay inside
+          the spare edge the zoom creates, or the image's edge shows:
+            translate % ≤ (scale − 1) ÷ (2 × scale) × 100
+          e.g. scale(1.03) allows up to 1.4%, scale(1.04) up to 1.9%.
       ─────────────────────────────────────────────────────────── */}
       <style>{`
-        /* ── Desktop (≥ 1024px) — cinematic zoom & pan ── */
+        /* ── Tablet and desktop (≥ 640px) — barely zoomed, so as much of
+           the painting shows as can while still filling the banner ── */
         @keyframes kb-zoom-out {
-          0%   { transform: scale(1.30) translate( 2%,  1%); }
-          100% { transform: scale(1.10) translate( 0%,  0%); }
+          0%   { transform: scale(1.05) translate( 0.8%, 0.5%); }
+          100% { transform: scale(1.00) translate( 0%,   0%); }
         }
         @keyframes kb-pan-lr {
-          0%   { transform: scale(1.10) translateX(-4%); }
-          100% { transform: scale(1.10) translateX( 4%); }
+          0%   { transform: scale(1.03) translateX(-1.4%); }
+          100% { transform: scale(1.03) translateX( 1.4%); }
         }
         @keyframes kb-pan-tb {
-          0%   { transform: scale(1.30) translateY(-8%); }
-          100% { transform: scale(1.30) translateY( 8%); }
-        }
-
-        /* ── Tablet (640px – 1023px) — reduced zoom so more art shows ── */
-        @media (max-width: 1023px) {
-          @keyframes kb-zoom-out {
-            0%   { transform: scale(1.15) translate( 1%,  0.5%); }
-            100% { transform: scale(1.05) translate( 0%,  0%); }
-          }
-          @keyframes kb-pan-lr {
-            0%   { transform: scale(1.08) translateX(-2.5%); }
-            100% { transform: scale(1.08) translateX( 2.5%); }
-          }
-          @keyframes kb-pan-tb {
-            0%   { transform: scale(1.12) translateY(-4%); }
-            100% { transform: scale(1.12) translateY( 4%); }
-          }
+          0%   { transform: scale(1.04) translateY(-1.9%); }
+          100% { transform: scale(1.04) translateY( 1.9%); }
         }
 
         /* ── Mobile (< 640px) — near-no zoom, full artwork visible ── */
@@ -218,7 +243,7 @@ export default function HeroBanner() {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide, i) => (
           /* ── Slide wrapper ──────────────────────────────────────────
               CSS opacity + transition = smooth crossfade.
               z-index 1 on the active slide keeps it above others

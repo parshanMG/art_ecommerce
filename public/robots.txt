@@ -1,0 +1,6 @@
+# Search engines may crawl every page. /api/ only returns data for the
+# site itself, so it's kept out of search results.
+User-agent: *
+Disallow: /api/
+
+Sitemap: https://maryammohseni.com/sitemap.xml

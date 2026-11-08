@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every page search engines should index. Add a line when a new page
+     (route in src/App.jsx) is added; paintings all live on /shop. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://maryammohseni.com/</loc></url>
+  <url><loc>https://maryammohseni.com/shop</loc></url>
+  <url><loc>https://maryammohseni.com/about</loc></url>
+  <url><loc>https://maryammohseni.com/contact</loc></url>
+  <url><loc>https://maryammohseni.com/privacy</loc></url>
+</urlset>

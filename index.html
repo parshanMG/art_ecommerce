@@ -4,8 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Maryam Mohseni — Watercolour Artist</title>
-    <meta name="description" content="Original watercolour paintings and fine-art prints by Maryam Mohseni — florals, botanicals and quiet everyday moments, painted with water and light." />
+    <meta name="description" content="Original watercolour paintings and fine-art prints by Maryam Mohseni (مریم محسنی) — florals, botanicals and quiet everyday moments, painted with water and light." />
     <link rel="icon" type="image/png" href="/images/MM.png" />
+
+    <!-- Link previews (WhatsApp, Instagram, Facebook, X…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Maryam Mohseni" />
+    <meta property="og:title" content="Maryam Mohseni — Watercolour Artist" />
+    <meta property="og:description" content="Original watercolour paintings and fine-art prints by Maryam Mohseni (مریم محسنی)." />
+    <meta property="og:image" content="https://maryammohseni.com/images/products/art9.jpeg" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Tells search engines who the site belongs to. To link her
+         profiles, put their full addresses in "sameAs", e.g.
+         "sameAs": ["https://www.instagram.com/…", "https://…"] -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://maryammohseni.com/#artist",
+            "name": "Maryam Mohseni",
+            "alternateName": "مریم محسنی",
+            "jobTitle": "Watercolour artist",
+            "url": "https://maryammohseni.com/",
+            "image": "https://maryammohseni.com/images/products/maryam.jpeg",
+            "sameAs": []
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://maryammohseni.com/#website",
+            "url": "https://maryammohseni.com/",
+            "name": "Maryam Mohseni",
+            "alternateName": ["مریم محسنی", "Maryam Mohseni Art"],
+            "inLanguage": ["en", "fa"],
+            "publisher": { "@id": "https://maryammohseni.com/#artist" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -60,8 +60,16 @@ async function contact(request, env, deps) {
 export function createWorker(deps = {}) {
   return {
     async fetch(request, env) {
-      const { pathname } = new URL(request.url);
+      const url = new URL(request.url);
+      const { pathname } = url;
       const { method } = request;
+
+      /* One address for search engines: www.maryammohseni.com/… moves
+         permanently to maryammohseni.com/… */
+      if (url.hostname.startsWith("www.")) {
+        url.hostname = url.hostname.slice(4);
+        return Response.redirect(url.toString(), 301);
+      }
 
       try {
         if (pathname === "/api/products" && method === "GET") {

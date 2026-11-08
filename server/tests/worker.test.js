@@ -71,6 +71,12 @@ test("worker: a body that isn't JSON is refused", async () => {
   assert.equal(res.status, 400);
 });
 
+test("worker: www addresses redirect permanently to the bare domain", async () => {
+  const res = await createWorker().fetch(new Request("https://www.example.com/shop?art=3"), fakeEnv());
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get("Location"), "https://example.com/shop?art=3");
+});
+
 test("worker: checkout is off, unknown API paths are 404, pages go to the website files", async () => {
   const worker = createWorker();
   const checkout = await worker.fetch(post("/api/checkout/create-payment-intent", {}), fakeEnv());
