@@ -20,7 +20,8 @@
     "helmet": "^7.2.0",
     "pg": "^8.11.0",
     "resend": "^6.35.0",
-    "stripe": "^14.0.0"
+    "stripe": "^14.0.0",
+    "validator": "^13.15.35"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

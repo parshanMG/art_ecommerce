@@ -209,7 +209,25 @@ Migrations live in `server/commerce/db/migrations/` and run in filename order wi
 | `DB_*`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESERVATION_TTL_MINUTES` | Shop mode only |
 | `TRUST_PROXY` | Proxies in front of the API (see below) |
 
-## Deployment notes
+## Deployment
+
+### Live site: Cloudflare Workers (portfolio mode)
+
+The live site is one Cloudflare Worker ([worker/index.js](worker/index.js), configured in [wrangler.jsonc](wrangler.jsonc)). It serves the built site and the portfolio-mode API (`/api/products`, `/api/contact`, `/api/health`) on the same domain, so there's no separate API server and no CORS to set up. The catalog, contact-form checks and emails are the same modules the Express server uses ([server/catalog.js](server/catalog.js), [server/contactForm.js](server/contactForm.js), [server/services/email.js](server/services/email.js)).
+
+1. **Workers & Pages → Create application → GitHub**, then pick this repo. The Worker's name must be `maryam-mohseni-art`, matching `name` in `wrangler.jsonc`, or the build fails.
+2. **Build command:** `npm run build:cloudflare` (it installs `server/`'s packages too, which the Worker bundles). Leave the deploy command as `npx wrangler deploy`. Node 22 comes from `.node-version`.
+3. **Settings → Variables & Secrets:** add `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` and `EMAIL_OWNER_ADDRESS` as secrets. Leave `VITE_COMMERCE_ENABLED` and `VITE_API_BASE_URL` unset.
+4. **Settings → Domains & Routes → Add → Custom Domain:** add the domain. Cloudflare creates the DNS record and certificate.
+5. Check `https://<domain>/api/health` shows `"emailConfigured":true`, then send a test message through the contact form.
+
+Every push to `main` redeploys. Contact messages are limited to 3 a minute per address (`CONTACT_LIMITER`); Cloudflare counts these per location, so the limit is approximate.
+
+To run the Worker locally, copy `.dev.vars.example` to `.dev.vars`, fill it in, and run `npm run worker:dev` (http://localhost:8787).
+
+### Express server (shop mode and Docker)
+
+Shop mode needs the Express server and PostgreSQL, which the Worker doesn't run. These notes apply to hosting it.
 
 - **SPA fallback:** the host must serve `index.html` for unknown paths so `/shop`, `/about` and `/contact` work on refresh (for example a CloudFront custom error response 403/404 → `/index.html`, 200).
 - **Docker:** `server/Dockerfile` builds the API image, including the catalog. `.dockerignore` keeps `.env` out of the image; pass secrets as runtime environment variables. In shop mode, run `npm run migrate` against the production database before starting a new version.

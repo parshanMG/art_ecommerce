@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { Router } from "express";
 import { body, param } from "express-validator";
-import { validateRequest, NAME_PATTERN } from "../../middleware/validateRequest.js";
+import { validateRequest } from "../../middleware/validateRequest.js";
+import { NAME_PATTERN } from "../../validation.js";
 import pool from "../db/pool.js";
 import { releaseReservation } from "../db/reservations.js";
 import { reserveItems } from "../orders.js";

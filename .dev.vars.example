@@ -1,0 +1,6 @@
+# Settings for `npm run worker:dev` (the Cloudflare Worker run locally).
+# Copy to .dev.vars and fill in. On Cloudflare, set the same names under
+# the Worker's Settings → Variables and Secrets (as secrets).
+RESEND_API_KEY=
+EMAIL_FROM_ADDRESS=
+EMAIL_OWNER_ADDRESS=
