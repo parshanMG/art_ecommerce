@@ -215,7 +215,7 @@ Migrations live in `server/commerce/db/migrations/` and run in filename order wi
 
 The live site is one Cloudflare Worker ([worker/index.js](worker/index.js), configured in [wrangler.jsonc](wrangler.jsonc)). It serves the built site and the portfolio-mode API (`/api/products`, `/api/contact`, `/api/health`) on the same domain, so there's no separate API server and no CORS to set up. The catalog, contact-form checks and emails are the same modules the Express server uses ([server/catalog.js](server/catalog.js), [server/contactForm.js](server/contactForm.js), [server/services/email.js](server/services/email.js)).
 
-1. **Workers & Pages → Create application → GitHub**, then pick this repo. The Worker's name must be `maryam-mohseni-art`, matching `name` in `wrangler.jsonc`, or the build fails.
+1. **Workers & Pages → Create application → GitHub**, then pick this repo. The Worker's name must be `art-ecommerce`, matching `name` in `wrangler.jsonc`, or the build fails.
 2. **Build command:** `npm run build:cloudflare` (it installs `server/`'s packages too, which the Worker bundles). Leave the deploy command as `npx wrangler deploy`. Node 22 comes from `.node-version`.
 3. **Settings → Variables & Secrets:** add `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` and `EMAIL_OWNER_ADDRESS` as secrets. Leave `VITE_COMMERCE_ENABLED` and `VITE_API_BASE_URL` unset.
 4. **Settings → Domains & Routes → Add → Custom Domain:** add the domain. Cloudflare creates the DNS record and certificate.
